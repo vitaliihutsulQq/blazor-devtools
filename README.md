@@ -47,6 +47,15 @@ Before publishing to GitHub Packages, make sure:
 2. Your GitHub Packages source and credentials are configured locally
 3. Any transitive internal packages required by the runtime are available in the target feed
 
+## GitHub Actions Publish Flow
+
+- CI workflow: `.github/workflows/ci.yml` runs on pull requests and pushes to `main`, and only builds/tests the solution plus builds the browser extension
+- Publish workflow: `.github/workflows/publish-packages.yml` runs only on manual dispatch or version tags like `v0.1.0`
+- GitHub Packages authentication uses the workflow `GITHUB_TOKEN`; no personal access token is hardcoded into the repo
+- Publishing order is enforced in the workflow by packing and publishing `BlazorDevTools.Protocol` first, then `BlazorDevTools.Runtime`
+
+Before the publish workflow can succeed in GitHub, make sure the repository and package settings allow workflow-based package publishing with `GITHUB_TOKEN`.
+
 ## Program.cs Setup
 
 Register the runtime services in `Program.cs`:

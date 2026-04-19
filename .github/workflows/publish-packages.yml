@@ -1,0 +1,68 @@
+name: publish-packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOTNET_VERSION: 9.0.x
+  GITHUB_PACKAGES_SOURCE: https://nuget.pkg.github.com/vitaliihutsulQq/index.json
+  PROTOCOL_PROJECT: src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj
+  RUNTIME_PROJECT: src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj
+  PACKAGES_DIR: artifacts/packages
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET and GitHub Packages authentication
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          source-url: ${{ env.GITHUB_PACKAGES_SOURCE }}
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore .NET dependencies
+        run: dotnet restore BlazorDevTools.sln
+
+      - name: Build .NET solution
+        run: dotnet build BlazorDevTools.sln --configuration Release --no-restore
+
+      - name: Run .NET tests
+        run: dotnet test BlazorDevTools.sln --configuration Release --no-build
+
+      - name: Create package output directories
+        run: mkdir -p "$PACKAGES_DIR/protocol" "$PACKAGES_DIR/runtime"
+
+      - name: Pack BlazorDevTools.Protocol
+        run: dotnet pack "$PROTOCOL_PROJECT" --configuration Release --no-build --no-restore --output "$PACKAGES_DIR/protocol" /p:ContinuousIntegrationBuild=true
+
+      - name: Publish BlazorDevTools.Protocol
+        run: dotnet nuget push "$PACKAGES_DIR/protocol/BlazorDevTools.Protocol.*.nupkg" --source "$GITHUB_PACKAGES_SOURCE" --skip-duplicate
+
+      - name: Pack BlazorDevTools.Runtime
+        run: dotnet pack "$RUNTIME_PROJECT" --configuration Release --no-build --no-restore --output "$PACKAGES_DIR/runtime" /p:ContinuousIntegrationBuild=true
+
+      - name: Publish BlazorDevTools.Runtime
+        run: dotnet nuget push "$PACKAGES_DIR/runtime/BlazorDevTools.Runtime.*.nupkg" --source "$GITHUB_PACKAGES_SOURCE" --skip-duplicate
+
+      - name: Upload packed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/packages/**/*.nupkg
+            artifacts/packages/**/*.snupkg

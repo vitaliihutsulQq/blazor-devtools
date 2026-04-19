@@ -20,7 +20,7 @@
 - Extension project: `src/BlazorDevTools.Extension` - minimal TypeScript browser extension scaffold with `package.json` and `tsconfig.json`.
 - Root documentation: `README.md` - installation and verification guide for the extension and runtime package.
 - NuGet restore is pinned to `nuget.org` through the repository `NuGet.config` to avoid machine-specific package sources leaking into builds.
-- No dedicated linter or CI workflow is configured yet.
+- GitHub Actions workflows live under `.github/workflows/` for CI validation and package publishing.
 ## Rule Files Checked
 - `.cursorrules`: not present.
 - `.cursor/rules/`: not present.
@@ -47,6 +47,7 @@
 - Run runtime tests only: `dotnet test tests/BlazorDevTools.Runtime.Tests/BlazorDevTools.Runtime.Tests.csproj`
 - Run a single NUnit test: `dotnet test tests/BlazorDevTools.Runtime.Tests/BlazorDevTools.Runtime.Tests.csproj --filter "FullyQualifiedName~BlazorDevTools.Runtime.Tests.RuntimeRegistrationTests"`
 - Pack the runtime NuGet package: `dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release`
+- Pack the protocol NuGet package: `dotnet pack src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj -c Release`
 - Run the sample app: `dotnet run --project src/BlazorDevTools.SampleApp/BlazorDevTools.SampleApp.csproj`
 - Run the external consumer app: `dotnet run --project tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj`
 - Publish the external consumer app for install validation: `dotnet publish tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj -c Debug -o artifacts/external-consumer`
