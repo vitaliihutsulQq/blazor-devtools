@@ -1,0 +1,19 @@
+<div class="alert alert-secondary py-2 mb-2" @attributes="DevToolsMarkerAttributes">
+    @Label
+    <span class="small text-muted d-block">Severity: @Severity | Visible: @IsVisible | Count: @BadgeCount</span>
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Severity { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public int BadgeCount { get; set; }
+}

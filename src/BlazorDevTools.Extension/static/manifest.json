@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Blazor DevTools",
+  "version": "0.1.0",
+  "description": "Developer tools for Blazor WebAssembly applications.",
+  "permissions": ["tabs"],
+  "devtools_page": "devtools.html",
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

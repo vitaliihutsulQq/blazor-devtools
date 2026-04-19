@@ -1,0 +1,21 @@
+<article class="rounded-3 border p-3 h-100 bg-white" @attributes="DevToolsMarkerAttributes">
+    <h3 class="h5 mb-2">@Title</h3>
+    <p class="mb-1 text-muted">Tone: @Tone</p>
+    <p class="mb-1 text-muted">Visible: @Visible</p>
+    <div class="display-6">@Count</div>
+</article>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public int Count { get; set; }
+
+    [Parameter]
+    public string Tone { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Visible { get; set; }
+}

@@ -1,0 +1,32 @@
+<section class="card shadow-sm border-0" @attributes="DevToolsMarkerAttributes">
+    <div class="card-body">
+        <h2 class="h4">Component tree fixture</h2>
+        <p class="text-muted mb-3">This nested hierarchy gives the runtime tracker a stable tree to export.</p>
+
+        <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
+            <InspectorBranch Title="Dashboard" ItemCount="@DashboardItemCount" IsHighlighted="@DashboardHighlighted" Region="North" />
+
+            @if (ShowNavigation)
+            {
+                <InspectorBranch Title="Navigation" ItemCount="@NavigationItemCount" IsHighlighted="@NavigationHighlighted" Region="Global" />
+            }
+        </CascadingValue>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public int DashboardItemCount { get; set; } = 12;
+
+    [Parameter]
+    public bool DashboardHighlighted { get; set; } = true;
+
+    [Parameter]
+    public int NavigationItemCount { get; set; } = 5;
+
+    [Parameter]
+    public bool NavigationHighlighted { get; set; }
+
+    [Parameter]
+    public bool ShowNavigation { get; set; } = true;
+}

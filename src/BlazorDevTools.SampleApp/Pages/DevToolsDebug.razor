@@ -1,0 +1,69 @@
+@page "/devtools-debug"
+@inject DevToolsSnapshotBridge SnapshotBridge
+
+<PageTitle>DevTools Debug</PageTitle>
+
+<div class="devtools-debug-page" @attributes="DevToolsMarkerAttributes">
+    <h1>DevTools Debug</h1>
+
+    <p>This page renders a nested component graph and now publishes snapshots automatically after changes settle.</p>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="btn btn-success" @onclick="IncrementDashboardItems">Add dashboard item</button>
+        <button class="btn btn-outline-primary" @onclick="ToggleDashboardHighlight">Toggle dashboard highlight</button>
+        <button class="btn btn-outline-secondary" @onclick="ToggleNavigation">Toggle navigation branch</button>
+        <button class="btn btn-primary" @onclick="ExportSnapshotAsync">Export component snapshot</button>
+    </div>
+
+    <p class="text-muted" role="status">@statusMessage</p>
+
+    <div class="alert alert-light border mb-3" role="status">
+        Dashboard items: @dashboardItemCount | Dashboard highlighted: @dashboardHighlighted | Navigation visible: @showNavigation
+    </div>
+
+    <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
+        <InspectorHost
+            DashboardItemCount="@dashboardItemCount"
+            DashboardHighlighted="@dashboardHighlighted"
+            NavigationItemCount="@navigationItemCount"
+            NavigationHighlighted="@navigationHighlighted"
+            ShowNavigation="@showNavigation" />
+    </CascadingValue>
+</div>
+
+@code {
+    private int dashboardItemCount = 12;
+    private bool dashboardHighlighted = true;
+    private int navigationItemCount = 5;
+    private bool navigationHighlighted;
+    private bool showNavigation = true;
+    private string statusMessage = "Automatic snapshot refresh is active. Use the controls above to verify live updates.";
+
+    private void IncrementDashboardItems()
+    {
+        dashboardItemCount++;
+        navigationItemCount = Math.Max(1, dashboardItemCount / 2);
+        statusMessage = $"Updated dashboard item count to {dashboardItemCount}. The DevTools panel should refresh automatically.";
+    }
+
+    private void ToggleDashboardHighlight()
+    {
+        dashboardHighlighted = !dashboardHighlighted;
+        navigationHighlighted = !navigationHighlighted;
+        statusMessage = $"Dashboard highlight set to {dashboardHighlighted}. The DevTools panel should refresh automatically.";
+    }
+
+    private void ToggleNavigation()
+    {
+        showNavigation = !showNavigation;
+        statusMessage = showNavigation
+            ? "Navigation branch restored. The DevTools tree should repopulate automatically."
+            : "Navigation branch removed. The DevTools tree should shrink automatically.";
+    }
+
+    private async Task ExportSnapshotAsync()
+    {
+        await SnapshotBridge.PostSnapshotAsync();
+        statusMessage = $"Manual snapshot exported at {DateTime.Now:T}. Automatic refresh remains enabled.";
+    }
+}

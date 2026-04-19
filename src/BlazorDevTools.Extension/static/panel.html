@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blazor DevTools Panel</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Segoe UI, sans-serif;
+        background: #f3f4f6;
+        color: #1f2937;
+      }
+
+      main {
+        padding: 16px;
+      }
+
+      .status {
+        margin: 0 0 12px;
+        color: #4b5563;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 12px;
+      }
+
+      .inspect-toggle {
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 14px;
+        background: #e2e8f0;
+        color: #0f172a;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .inspect-toggle.is-active {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .tree-toolbar {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .tree-filter {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #0f172a;
+        box-sizing: border-box;
+      }
+
+      .tree-filter:focus {
+        outline: 2px solid #bfdbfe;
+        border-color: #60a5fa;
+      }
+
+      .panel-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.9fr);
+        gap: 16px;
+        min-height: 420px;
+      }
+
+      .surface {
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      .pane-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .pane-header h2 {
+        margin: 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #475569;
+      }
+
+      .tree-pane {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .tree-scroll {
+        overflow: auto;
+        padding: 12px;
+      }
+
+      .empty-state {
+        margin: 0;
+        padding: 12px;
+        color: #6b7280;
+      }
+
+      .tree-level {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .tree-level .tree-level {
+        margin-left: 18px;
+        padding-left: 10px;
+        border-left: 1px solid #e5e7eb;
+      }
+
+      .tree-item {
+        margin: 4px 0;
+      }
+
+      .tree-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tree-toggle,
+      .tree-node {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+      }
+
+      .tree-toggle {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        color: #475569;
+      }
+
+      .tree-toggle:hover,
+      .tree-node:hover {
+        background: #e5e7eb;
+      }
+
+      .tree-spacer {
+        width: 24px;
+        height: 24px;
+        flex: 0 0 24px;
+      }
+
+      .tree-node {
+        flex: 1;
+        text-align: left;
+        padding: 6px 10px;
+        border-radius: 8px;
+      }
+
+      .tree-node.is-selected {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .tree-meta {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .details-pane {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .details-content {
+        padding: 16px;
+      }
+
+      .details-name {
+        margin: 0 0 16px;
+        font-size: 20px;
+      }
+
+      .details-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .detail-card {
+        padding: 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+      }
+
+      .detail-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+      }
+
+      .detail-value {
+        margin: 0;
+        font-size: 14px;
+        word-break: break-word;
+      }
+
+      .parameters-section {
+        margin-top: 16px;
+      }
+
+      .parameters-title {
+        margin: 0 0 10px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #475569;
+      }
+
+      .parameter-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+      }
+
+      .parameter-item {
+        padding: 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+      }
+
+      .parameter-name {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+      }
+
+      .parameter-value {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      @media (max-width: 720px) {
+        .panel-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      code {
+        margin: 0;
+        font-family: Consolas, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app">
+      <div class="toolbar">
+        <p id="snapshot-status" class="status">Waiting for a component snapshot from the inspected Blazor app.</p>
+        <button id="inspect-toggle" class="inspect-toggle" type="button">Pick From Page</button>
+      </div>
+      <div class="panel-layout">
+        <section class="surface tree-pane">
+          <header class="pane-header">
+            <h2>Component Tree</h2>
+          </header>
+          <div class="tree-toolbar">
+            <input id="tree-filter" class="tree-filter" type="search" placeholder="Search by component or type name">
+          </div>
+          <div id="tree-root" class="tree-scroll">
+            <p class="empty-state">Click the export button in the sample app after opening this panel.</p>
+          </div>
+        </section>
+
+        <aside class="surface details-pane">
+          <header class="pane-header">
+            <h2>Selection</h2>
+          </header>
+          <div id="details-root" class="details-content">
+            <p class="empty-state">Select a component node to inspect its metadata.</p>
+          </div>
+        </aside>
+      </div>
+    </main>
+    <script type="module" src="./panel.js"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+<section class="border rounded-3 p-3 mb-3 bg-light-subtle" @attributes="DevToolsMarkerAttributes">
+    <h3 class="h5">@Title</h3>
+    <p class="text-muted mb-3">Region: @Region | Items: @ItemCount | Highlighted: @IsHighlighted</p>
+
+    <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
+        <InspectorTwig Title="@($"{Title} metrics")" Status="@(IsHighlighted ? "Active" : "Standby")" LastUpdated="@(new DateTimeOffset(2026, 4, 19, 9, 30, 0, TimeSpan.Zero))" />
+        <InspectorLeaf Label="@($"{Title} summary")" Severity="Info" IsVisible="true" BadgeCount="@ItemCount" />
+        <InspectorLeaf Label="@($"{Title} details")" Severity="Warning" IsVisible="@IsHighlighted" BadgeCount="@(ItemCount / 2)" />
+    </CascadingValue>
+</section>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public int ItemCount { get; set; }
+
+    [Parameter]
+    public bool IsHighlighted { get; set; }
+
+    [Parameter]
+    public string Region { get; set; } = string.Empty;
+}

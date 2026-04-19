@@ -1,0 +1,43 @@
+@page "/devtools-smoke"
+
+<PageTitle>DevTools Smoke</PageTitle>
+
+<div class="container py-3" @attributes="DevToolsMarkerAttributes">
+    <h1>DevTools Smoke</h1>
+    <p class="text-muted">This page validates the recommended external integration pattern.</p>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="btn btn-success" @onclick="AddOrders">Add order</button>
+        <button class="btn btn-outline-primary" @onclick="ToggleAlerts">Toggle alerts</button>
+        <button class="btn btn-outline-secondary" @onclick="ToggleInventory">Toggle inventory card</button>
+    </div>
+
+    <div class="alert alert-light border">
+        Orders: @orders | Alerts enabled: @alertsEnabled | Inventory visible: @inventoryVisible
+    </div>
+
+    <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
+        <ConsumerDashboard Orders="@orders" AlertsEnabled="@alertsEnabled" InventoryVisible="@inventoryVisible" />
+    </CascadingValue>
+</div>
+
+@code {
+    private int orders = 8;
+    private bool alertsEnabled = true;
+    private bool inventoryVisible = true;
+
+    private void AddOrders()
+    {
+        orders++;
+    }
+
+    private void ToggleAlerts()
+    {
+        alertsEnabled = !alertsEnabled;
+    }
+
+    private void ToggleInventory()
+    {
+        inventoryVisible = !inventoryVisible;
+    }
+}

@@ -1,0 +1,21 @@
+<section class="border rounded-3 p-3 mb-3 bg-white" @attributes="DevToolsMarkerAttributes">
+    <h4 class="h6">@Title</h4>
+    <p class="text-muted mb-3">Status: @Status | Updated: @LastUpdated.LocalDateTime.ToShortTimeString()</p>
+
+    <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
+        <InspectorLeaf Label="@($"{Title} chart")" Severity="Success" IsVisible="true" BadgeCount="3" />
+        <InspectorLeaf Label="@($"{Title} summary")" Severity="Muted" IsVisible="true" BadgeCount="1" />
+    </CascadingValue>
+</section>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Status { get; set; } = string.Empty;
+
+    [Parameter]
+    public DateTimeOffset LastUpdated { get; set; }
+}

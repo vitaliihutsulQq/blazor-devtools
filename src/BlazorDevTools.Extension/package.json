@@ -1,0 +1,13 @@
+{
+  "name": "blazor-devtools-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal browser extension scaffold for Blazor DevTools.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.content.json && node ./scripts/copy-static.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.0.307",
+    "typescript": "5.7.3"
+  }
+}
