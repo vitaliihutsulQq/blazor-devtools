@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
 		<PackageId>BlazorDevTools.Protocol</PackageId>
-		<Version>0.1.0</Version>
+		<Version>0.1.1</Version>
 		<Authors>Blazor DevTools Contributors</Authors>
 		<Company>Blazor DevTools</Company>
 		<Description>Protocol contracts used internally by Blazor DevTools runtime and extension messaging.</Description>
