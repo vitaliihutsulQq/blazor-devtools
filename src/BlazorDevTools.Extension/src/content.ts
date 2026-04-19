@@ -1,6 +1,4 @@
 (() => {
-  console.debug("[Blazor DevTools][content] content script loaded", window.location.href);
-
   const snapshotMessageType = "blazor-devtools:component-tree-snapshot";
   const runtimeSource = "blazor-devtools-runtime";
   const extensionSource = "blazor-devtools-extension";
@@ -25,11 +23,8 @@
       return;
     }
 
-    console.debug("[Blazor DevTools][content] window message received", message);
-
     latestSnapshotMessage = message;
 
-    console.debug("[Blazor DevTools][content] relaying snapshot to extension");
     void safeSendRuntimeMessage({
       kind: "blazor-devtools:relay",
       payload: message
@@ -42,12 +37,7 @@
     }
 
     if (message.kind === requestSnapshotKind) {
-      console.debug("[Blazor DevTools][content] request-snapshot received", {
-        hasCachedSnapshot: latestSnapshotMessage !== null
-      });
-
       if (latestSnapshotMessage) {
-        console.debug("[Blazor DevTools][content] replaying cached snapshot to extension");
         void safeSendRuntimeMessage({
           kind: "blazor-devtools:relay",
           payload: latestSnapshotMessage
@@ -135,7 +125,6 @@
   }
 
   function requestSnapshotFromPage(): void {
-    console.debug("[Blazor DevTools][content] requesting latest snapshot from page bridge");
     window.postMessage(
       {
         source: extensionSource,
@@ -145,25 +134,13 @@
     );
   }
 
-  async function safeSendRuntimeMessage(message: unknown): Promise<void> {
-    try {
-      await chrome.runtime.sendMessage(message);
-    } catch (error) {
-      if (!isMissingReceiverError(error)) {
-        console.debug("Blazor DevTools message delivery failed.", error);
-      } else {
-        console.debug("[Blazor DevTools][content] runtime receiver missing", error);
-      }
-    }
+async function safeSendRuntimeMessage(message: unknown): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage(message);
+  } catch {
+    return;
   }
-
-  function isMissingReceiverError(error: unknown): boolean {
-    if (!(error instanceof Error)) {
-      return false;
-    }
-
-    return error.message.includes("Receiving end does not exist") || error.message.includes("Could not establish connection");
-  }
+}
 
   function updateOverlay(element: HTMLElement | null): void {
     if (!inspectModeActive || !element) {

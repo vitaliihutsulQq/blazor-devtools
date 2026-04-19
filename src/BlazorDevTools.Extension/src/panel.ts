@@ -52,8 +52,6 @@ type TreeNodeViewModel = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.debug("[Blazor DevTools][panel] panel loaded");
-
   const treeRoot = document.getElementById("tree-root");
   const detailsRoot = document.getElementById("details-root");
   const status = document.getElementById("snapshot-status");
@@ -65,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const tabId = getInspectedTabId();
-  console.debug("[Blazor DevTools][panel] current inspected tab id", tabId);
   const expandedNodeIds = new Set<string>();
   let selectedNodeId: string | null = null;
   let currentTree: TreeNodeViewModel[] = [];
@@ -112,10 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
       expandPathToNode(currentTree, selectedNodeId, expandedNodeIds);
     }
 
-    console.debug("[Blazor DevTools][panel] tree updated", {
-      rootCount: currentTree.length,
-      selectedNodeId
-    });
     status.textContent = `Snapshot captured at ${new Date(snapshot.capturedAt).toLocaleTimeString()}.`;
     render();
   };
@@ -128,11 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const delivered = await safeTabsSendMessage(tabId, {
       kind: "blazor-devtools:request-snapshot"
-    });
-
-    console.debug("[Blazor DevTools][panel] request-snapshot sent", {
-      tabId,
-      delivered
     });
 
     if (!delivered) {
@@ -164,8 +152,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    console.debug("[Blazor DevTools][panel] runtime message received", message);
-
     if (message.kind === "blazor-devtools:relay") {
       const snapshot = extractSnapshot(message.payload);
       if (!snapshot) {
@@ -187,8 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
       setInspectToggleState(message.payload.active);
     }
   });
-
-  console.debug("[Blazor DevTools][panel] runtime listener attached");
 
   inspectToggle.addEventListener("click", () => {
     if (tabId === null) {
@@ -548,11 +532,7 @@ async function safeTabsSendMessage(tabId: number, message: unknown): Promise<boo
   try {
     await chrome.tabs.sendMessage(tabId, message);
     return true;
-  } catch (error) {
-    if (!isMissingReceiverError(error)) {
-      console.debug("Blazor DevTools tab message delivery failed.", error);
-    }
-
+  } catch {
     return false;
   }
 }
