@@ -46,6 +46,7 @@
 - Run .NET tests: `dotnet test BlazorDevTools.sln`
 - Run runtime tests only: `dotnet test tests/BlazorDevTools.Runtime.Tests/BlazorDevTools.Runtime.Tests.csproj`
 - Run a single NUnit test: `dotnet test tests/BlazorDevTools.Runtime.Tests/BlazorDevTools.Runtime.Tests.csproj --filter "FullyQualifiedName~BlazorDevTools.Runtime.Tests.RuntimeRegistrationTests"`
+- Pack the runtime NuGet package: `dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release`
 - Run the sample app: `dotnet run --project src/BlazorDevTools.SampleApp/BlazorDevTools.SampleApp.csproj`
 - Run the external consumer app: `dotnet run --project tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj`
 - Publish the external consumer app for install validation: `dotnet publish tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj -c Debug -o artifacts/external-consumer`

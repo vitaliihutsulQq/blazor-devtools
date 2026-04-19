@@ -31,6 +31,22 @@ For local development in this repo, the consuming app uses:
 
 You do not need to reference `BlazorDevTools.Protocol` directly. `BlazorDevTools.Runtime` brings it along as an implementation detail.
 
+## Pack And Publish The Runtime
+
+Create a local NuGet package with:
+
+```bash
+dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release
+```
+
+This produces a `.nupkg` and `.snupkg` under `src/BlazorDevTools.Runtime/bin/Release`.
+
+Before publishing to GitHub Packages, make sure:
+
+1. The package metadata URLs in `src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj` point at the real repository
+2. Your GitHub Packages source and credentials are configured locally
+3. Any transitive internal packages required by the runtime are available in the target feed
+
 ## Program.cs Setup
 
 Register the runtime services in `Program.cs`:
