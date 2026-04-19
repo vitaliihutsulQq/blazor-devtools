@@ -23,6 +23,15 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      - name: Authenticate to GitHub Packages
+        run: |
+          dotnet nuget remove source github || true
+          dotnet nuget add source "https://nuget.pkg.github.com/vitaliihutsulQq/index.json" \
+            --name github \
+            --username "vitaliihutsulQq" \
+            --password "${{ secrets.GH_PACKAGES_TOKEN }}" \
+            --store-password-in-clear-text
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
