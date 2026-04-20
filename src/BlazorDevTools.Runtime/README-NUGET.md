@@ -1,12 +1,14 @@
 # BlazorDevTools.Runtime
 
-Install the runtime package into a Blazor WebAssembly app:
+`BlazorDevTools.Runtime` connects a Blazor WebAssembly app to the Blazor DevTools browser extension.
+
+Install it:
 
 ```bash
-dotnet add package BlazorDevTools.Runtime
+dotnet add package BlazorDevTools.Runtime --version 0.1.3
 ```
 
-Register the runtime in `Program.cs`:
+Register it in `Program.cs`:
 
 ```csharp
 using BlazorDevTools.Runtime;
@@ -21,14 +23,19 @@ builder.Services.AddBlazorDevToolsRuntime();
 await builder.Build().RunAsync();
 ```
 
-Load the bridge script in `wwwroot/index.html`:
+Load the bridge script from the package in `wwwroot/index.html`:
 
 ```html
 <script src="_content/BlazorDevTools.Runtime/devtoolsBridge.js"></script>
 <script src="_framework/blazor.webassembly.js"></script>
 ```
 
-Recommended global tracking pattern:
+Choose an integration mode:
+
+- simple mode - use an app base class that inherits `DevtoolsComponentBase` and apply it from `_Imports.razor`
+- experimental mode - for large partial `.razor.cs : ComponentBase` apps, the package also carries the proxy generator automatically
+
+Simple mode example:
 
 ```csharp
 using BlazorDevTools.Runtime;
@@ -45,6 +52,4 @@ public abstract class AppComponentBase : DevtoolsComponentBase
 @inherits AppComponentBase
 ```
 
-Apply that `_Imports.razor` pattern so your components appear in the Blazor DevTools tree without per-file opt-in.
-
-For large apps that already use many partial `.razor.cs : ComponentBase` components, the package also includes an experimental proxy/generator tracking path automatically. You do not need to add a separate analyzer package manually.
+The browser extension must also be installed locally. See the repository README for full setup, troubleshooting, and workflow details.
