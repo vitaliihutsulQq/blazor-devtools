@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BlazorDevTools.Generators\BlazorDevTools.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\BlazorDevTools.Runtime\BlazorDevTools.Runtime.csproj" />
   </ItemGroup>
 

@@ -1,0 +1,8 @@
+<section class="rounded-3 border p-3 bg-white h-100">
+    <h3 class="h5">Activity</h3>
+
+    @foreach (var activity in activities)
+    {
+        <ActivityTimelineItem Activity="@activity" />
+    }
+</section>

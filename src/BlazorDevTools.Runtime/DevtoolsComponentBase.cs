@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using BlazorDevTools.Protocol;
+using Microsoft.AspNetCore.Components.Rendering;
 
 namespace BlazorDevTools.Runtime;
 
@@ -16,8 +16,6 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
     [CascadingParameter(Name = ParentComponentIdCascadeName)]
     public string? ParentComponentId { get; set; }
 
-    protected string ComponentId { get; } = $"component-{Guid.NewGuid():N}";
-
     protected string DomMarkerId => ComponentId;
 
     protected string DomMarkerAttributeName => DevToolsDomMarker.AttributeName;
@@ -30,69 +28,36 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
 
     protected string ParentComponentCascadeName => ParentComponentIdCascadeName;
 
-    private bool isRegistered;
     private IReadOnlyDictionary<string, object>? devToolsMarkerAttributes;
+    private DevToolsTrackedComponentLifecycle? trackingLifecycle;
+
+    protected string ComponentId => TrackingLifecycle.ComponentId;
 
     public override async Task SetParametersAsync(ParameterView parameters)
     {
-        var capturedParameters = CaptureParameterValues(parameters);
+        var capturedParameters = DevToolsParameterSnapshotFactory.Create(parameters, nameof(ParentComponentId));
 
         await base.SetParametersAsync(parameters);
 
-        if (!isRegistered)
-        {
-            ComponentTracker.RegisterComponent(ComponentId, GetType(), ParentComponentId);
-            ComponentTracker.SetDomMarker(ComponentId, DomMarkerId);
-            isRegistered = true;
-        }
-
-        ComponentTracker.UpdateParameters(ComponentId, FormatCapturedParameters(capturedParameters));
-        AutoRefreshScheduler.RequestRefresh();
+        TrackingLifecycle.ApplySnapshot(GetType(), ParentComponentId, capturedParameters, DomMarkerId);
     }
 
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
 
-        if (isRegistered)
-        {
-            ComponentTracker.IncrementRenderCount(ComponentId);
-            AutoRefreshScheduler.RequestRefresh();
-        }
+        trackingLifecycle?.OnAfterRender();
     }
 
     public void Dispose()
     {
-        if (isRegistered)
-        {
-            ComponentTracker.UnregisterComponent(ComponentId);
-            AutoRefreshScheduler.RequestRefresh();
-        }
+        trackingLifecycle?.Dispose();
     }
 
-    private static IReadOnlyList<CapturedParameterValue> CaptureParameterValues(ParameterView parameters)
+    protected void RenderTrackedChildContent(RenderTreeBuilder builder, RenderFragment childContent)
     {
-        var capturedParameters = new List<CapturedParameterValue>();
-
-        foreach (var parameter in parameters)
-        {
-            if (parameter.Name == nameof(ParentComponentId))
-            {
-                continue;
-            }
-
-            capturedParameters.Add(new CapturedParameterValue(parameter.Name, parameter.Value));
-        }
-
-        return capturedParameters;
+        TrackingLifecycle.RenderWithParentScope(builder, childContent);
     }
 
-    private static IReadOnlyList<ComponentParameterSnapshot> FormatCapturedParameters(IReadOnlyList<CapturedParameterValue> capturedParameters)
-    {
-        return capturedParameters
-            .Select(parameter => new ComponentParameterSnapshot(parameter.Name, ComponentParameterFormatter.Format(parameter.Value)))
-            .ToArray();
-    }
-
-    private sealed record CapturedParameterValue(string Name, object? Value);
+    private DevToolsTrackedComponentLifecycle TrackingLifecycle => trackingLifecycle ??= new DevToolsTrackedComponentLifecycle(ComponentTracker, AutoRefreshScheduler);
 }

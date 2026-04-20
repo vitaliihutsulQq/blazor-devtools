@@ -1,5 +1,3 @@
-using System.Reflection;
-using BlazorDevTools.Protocol;
 using BlazorDevTools.Runtime;
 using Microsoft.AspNetCore.Components;
 
@@ -17,26 +15,12 @@ public class DevtoolsComponentBaseTests
                 [nameof(TestComponent.Count)] = 5
             });
 
-        var capturedParameters = InvokeCaptureParameterValues(parameterView);
+        var snapshots = DevToolsParameterSnapshotFactory.Create(parameterView);
 
         await Task.Yield();
 
-        var formattedParameters = InvokeFormatCapturedParameters(capturedParameters);
-
-        Assert.That(formattedParameters.Select(parameter => parameter.Name), Is.EqualTo(new[] { nameof(TestComponent.Title), nameof(TestComponent.Count) }));
-        Assert.That(formattedParameters.Select(parameter => parameter.Value), Is.EqualTo(new[] { "Weather", "5" }));
-    }
-
-    private static object InvokeCaptureParameterValues(ParameterView parameterView)
-    {
-        var method = typeof(DevtoolsComponentBase).GetMethod("CaptureParameterValues", BindingFlags.Static | BindingFlags.NonPublic);
-        return method!.Invoke(null, [parameterView])!;
-    }
-
-    private static IReadOnlyList<ComponentParameterSnapshot> InvokeFormatCapturedParameters(object capturedParameters)
-    {
-        var method = typeof(DevtoolsComponentBase).GetMethod("FormatCapturedParameters", BindingFlags.Static | BindingFlags.NonPublic);
-        return (IReadOnlyList<ComponentParameterSnapshot>)method!.Invoke(null, [capturedParameters])!;
+        Assert.That(snapshots.Select(parameter => parameter.Name), Is.EqualTo(new[] { nameof(TestComponent.Title), nameof(TestComponent.Count) }));
+        Assert.That(snapshots.Select(parameter => parameter.Value), Is.EqualTo(new[] { "Weather", "5" }));
     }
 
     private sealed class TestComponent

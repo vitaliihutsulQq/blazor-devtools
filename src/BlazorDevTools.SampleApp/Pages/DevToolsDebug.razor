@@ -22,6 +22,10 @@
     </div>
 
     <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
+        <div class="mb-3">
+            <ExperimentalProxyPanel Title="Large-app proxy proof of concept" Count="@dashboardItemCount" ShowDetails="@showNavigation" />
+        </div>
+
         <InspectorHost
             DashboardItemCount="@dashboardItemCount"
             DashboardHighlighted="@dashboardHighlighted"

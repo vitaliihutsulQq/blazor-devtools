@@ -1,0 +1,11 @@
+@inherits ComponentBase
+
+<article class="rounded-3 border p-3 bg-light h-100">
+    <h3 class="h6 mb-2">@Title</h3>
+    <p class="mb-1">Count: <strong>@Count</strong></p>
+    <p class="mb-0 text-muted">Status: @Status</p>
+
+    <div class="mt-2">
+        <ExperimentalProxyStatusBadge Label="@Status" IsActive="@IsActive" />
+    </div>
+</article>

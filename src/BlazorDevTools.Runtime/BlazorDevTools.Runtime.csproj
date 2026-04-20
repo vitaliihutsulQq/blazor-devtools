@@ -24,6 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BlazorDevTools.Generators\BlazorDevTools.Generators.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <ProjectReference Include="..\BlazorDevTools.Protocol\BlazorDevTools.Protocol.csproj" />
   </ItemGroup>
 
@@ -35,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\BlazorDevTools.Generators\bin\$(Configuration)\netstandard2.0\BlazorDevTools.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="README-NUGET.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 

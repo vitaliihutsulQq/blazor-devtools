@@ -1,5 +1,6 @@
 using BlazorDevTools.Protocol;
 using BlazorDevTools.Runtime;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 
@@ -21,6 +22,8 @@ public class RuntimeRegistrationTests
         Assert.That(provider.GetRequiredService<ComponentTracker>(), Is.Not.Null);
         Assert.That(provider.GetRequiredService<DevToolsSnapshotBridge>(), Is.Not.Null);
         Assert.That(provider.GetRequiredService<DevToolsAutoRefreshScheduler>(), Is.Not.Null);
+        Assert.That(provider.GetRequiredService<IComponentActivator>(), Is.Not.Null);
+        Assert.That(provider.GetRequiredService<IDevToolsComponentProxyRegistry>(), Is.Not.Null);
     }
 
     private sealed class TestJsRuntime : IJSRuntime
