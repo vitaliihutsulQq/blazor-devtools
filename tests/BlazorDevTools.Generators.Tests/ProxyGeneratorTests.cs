@@ -59,6 +59,38 @@ public partial class SecondComponent : ComponentBase { }
     }
 
     [Test]
+    public void Generator_uses_exact_symbol_namespace_for_proxy_references()
+    {
+        const string source = """
+using Microsoft.AspNetCore.Components;
+
+namespace A.B.C.Widget
+{
+    public partial class Widget : ComponentBase { }
+}
+
+namespace A.B.C.Pages.TimeEntry
+{
+    public partial class TimeEntry : ComponentBase { }
+}
+""";
+
+        var result = RunGenerator(source);
+        var widgetProxy = result.GeneratedSources["Widget__BlazorDevToolsProxy.g.cs"];
+        var timeEntryProxy = result.GeneratedSources["TimeEntry__BlazorDevToolsProxy.g.cs"];
+        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BlazorDevToolsGeneratedComponentProxyManifest_", StringComparison.Ordinal)).Value;
+
+        Assert.That(widgetProxy, Does.Contain("namespace A.B.C.Widget;"));
+        Assert.That(timeEntryProxy, Does.Contain("namespace A.B.C.Pages.TimeEntry;"));
+
+        Assert.That(manifest, Does.Contain("new(typeof(global::A.B.C.Widget.Widget), typeof(global::A.B.C.Widget.Widget__BlazorDevToolsProxy))"));
+        Assert.That(manifest, Does.Contain("new(typeof(global::A.B.C.Pages.TimeEntry.TimeEntry), typeof(global::A.B.C.Pages.TimeEntry.TimeEntry__BlazorDevToolsProxy))"));
+
+        Assert.That(manifest, Does.Not.Contain("global::A.B.C.Widget__BlazorDevToolsProxy"));
+        Assert.That(manifest, Does.Not.Contain("global::A.B.C.Pages.TimeEntry__BlazorDevToolsProxy"));
+    }
+
+    [Test]
     public void Generator_emits_actionable_skip_diagnostics_for_fixture_like_shapes()
     {
         const string source = """
