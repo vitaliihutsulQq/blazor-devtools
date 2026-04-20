@@ -13,9 +13,13 @@
 - Root solution: `BlazorDevTools.sln`.
 - .NET projects:
   - `src/BlazorDevTools.Protocol` - protocol contracts class library.
+  - `src/BlazorDevTools.Generators` - Roslyn source generator for experimental proxy-based component tracking.
   - `src/BlazorDevTools.Runtime` - runtime integration Razor class library with static web assets.
   - `src/BlazorDevTools.SampleApp` - Blazor WebAssembly host used for local development.
   - `tests/BlazorDevTools.Runtime.Tests` - NUnit test project for runtime behavior.
+  - `tests/BlazorDevTools.Generators.Tests` - NUnit test project for source generator behavior.
+  - `tests/BlazorDevTools.CompatibilityFixture` - Blazor WebAssembly fixture that simulates large code-behind-heavy consumer patterns.
+  - `tests/BlazorDevTools.CompatibilityFixture.Tests` - NUnit test project that verifies generator behavior against the compatibility fixture.
   - `tests/BlazorDevTools.ExternalConsumer` - separate Blazor WebAssembly app that validates external-consumer installation.
 - Extension project: `src/BlazorDevTools.Extension` - minimal TypeScript browser extension scaffold with `package.json` and `tsconfig.json`.
 - Root documentation: `README.md` - installation and verification guide for the extension and runtime package.

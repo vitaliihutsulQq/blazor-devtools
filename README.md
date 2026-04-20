@@ -30,6 +30,7 @@ For local development in this repo, the consuming app uses:
 ```
 
 You do not need to reference `BlazorDevTools.Protocol` directly. `BlazorDevTools.Runtime` brings it along as an implementation detail.
+The runtime package now also carries the experimental proxy/generator analyzer so consumers do not need to add `BlazorDevTools.Generators` manually.
 
 ## Pack And Publish The Runtime
 
@@ -100,6 +101,23 @@ With this pattern in `_Imports.razor`, regular Razor components and pages appear
 
 This is the recommended discoverability-first mode: install the runtime, open the `Blazor` panel, and discover tracked components immediately.
 
+## Experimental Proxy Mode
+
+For large apps with many partial `.razor.cs : ComponentBase` components, the runtime also includes an experimental proxy-based tracking mode.
+
+- It is delivered automatically through `BlazorDevTools.Runtime`
+- It does not require manual analyzer references
+- It targets eligible partial `ComponentBase` components and generates proxy subclasses plus a registration manifest at build time
+- It is intended for large apps where `_Imports.razor @inherits AppComponentBase` is not practical
+- The package-based validation fixture lives under `artifacts/package-consumer-validation`
+
+Current limitations:
+
+- It only targets non-abstract, non-sealed, non-generic partial classes deriving from `ComponentBase`
+- DOM picker support remains opt-in and separate from this mode
+- It is still experimental and should be validated against your app before broad rollout
+- Package delivery is the intended path for this mode; a plain project reference to `BlazorDevTools.Runtime.csproj` does not fully model analyzer delivery the same way a packed NuGet does
+
 ## index.html Script Setup
 
 Load the runtime bridge from the packaged static web asset:
@@ -162,5 +180,7 @@ This is the recommended incremental path for existing apps. Layouts or component
 5. Use the tree search box to find components by name or full type name
 6. Toggle `Pick From Page` in the panel, hover a DOM-marked tracked element, and click it
 7. Confirm the matching component is selected in the tree and details pane
+
+To verify the experimental proxy mode specifically, use a component with `.razor` + `.razor.cs` and explicit `: ComponentBase`, then confirm it appears in the tree without `@inherits DevtoolsComponentBase` or `_Imports.razor @inherits AppComponentBase`.
 
 For a working reference, use `tests/BlazorDevTools.ExternalConsumer`, which follows the same setup from a separate consuming app.

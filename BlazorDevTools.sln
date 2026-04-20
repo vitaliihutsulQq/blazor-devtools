@@ -17,6 +17,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDevTools.Runtime.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDevTools.ExternalConsumer", "tests\BlazorDevTools.ExternalConsumer\BlazorDevTools.ExternalConsumer.csproj", "{C787B013-52CB-49DB-8A83-F220513DADC2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDevTools.Generators", "src\BlazorDevTools.Generators\BlazorDevTools.Generators.csproj", "{06F07873-ECC3-4ED3-8AEF-E1C202880B3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDevTools.Generators.Tests", "tests\BlazorDevTools.Generators.Tests\BlazorDevTools.Generators.Tests.csproj", "{FF100603-112B-4F83-ACA9-F573A7D8D9BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDevTools.CompatibilityFixture", "tests\BlazorDevTools.CompatibilityFixture\BlazorDevTools.CompatibilityFixture.csproj", "{2EC920F0-B65E-49CB-A0DE-CDBFC57B05A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDevTools.CompatibilityFixture.Tests", "tests\BlazorDevTools.CompatibilityFixture.Tests\BlazorDevTools.CompatibilityFixture.Tests.csproj", "{8EE8F09A-8DC6-4448-BC28-046FF9E1AF6E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +51,22 @@ Global
 		{C787B013-52CB-49DB-8A83-F220513DADC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C787B013-52CB-49DB-8A83-F220513DADC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C787B013-52CB-49DB-8A83-F220513DADC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06F07873-ECC3-4ED3-8AEF-E1C202880B3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06F07873-ECC3-4ED3-8AEF-E1C202880B3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06F07873-ECC3-4ED3-8AEF-E1C202880B3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06F07873-ECC3-4ED3-8AEF-E1C202880B3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF100603-112B-4F83-ACA9-F573A7D8D9BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF100603-112B-4F83-ACA9-F573A7D8D9BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF100603-112B-4F83-ACA9-F573A7D8D9BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF100603-112B-4F83-ACA9-F573A7D8D9BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EC920F0-B65E-49CB-A0DE-CDBFC57B05A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EC920F0-B65E-49CB-A0DE-CDBFC57B05A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EC920F0-B65E-49CB-A0DE-CDBFC57B05A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EC920F0-B65E-49CB-A0DE-CDBFC57B05A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EE8F09A-8DC6-4448-BC28-046FF9E1AF6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EE8F09A-8DC6-4448-BC28-046FF9E1AF6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EE8F09A-8DC6-4448-BC28-046FF9E1AF6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EE8F09A-8DC6-4448-BC28-046FF9E1AF6E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,5 +77,9 @@ Global
 		{BE00CDF4-2406-4907-9A73-775C69369015} = {7A41E7A7-2719-4270-AAB9-76EF22BA94C4}
 		{5BE9878A-C29C-4C05-A6F8-093241DC4AB0} = {B27F8534-D709-478F-AB3F-D5A7F2BAE811}
 		{C787B013-52CB-49DB-8A83-F220513DADC2} = {B27F8534-D709-478F-AB3F-D5A7F2BAE811}
+		{06F07873-ECC3-4ED3-8AEF-E1C202880B3D} = {7A41E7A7-2719-4270-AAB9-76EF22BA94C4}
+		{FF100603-112B-4F83-ACA9-F573A7D8D9BA} = {B27F8534-D709-478F-AB3F-D5A7F2BAE811}
+		{2EC920F0-B65E-49CB-A0DE-CDBFC57B05A2} = {B27F8534-D709-478F-AB3F-D5A7F2BAE811}
+		{8EE8F09A-8DC6-4448-BC28-046FF9E1AF6E} = {B27F8534-D709-478F-AB3F-D5A7F2BAE811}
 	EndGlobalSection
 EndGlobal

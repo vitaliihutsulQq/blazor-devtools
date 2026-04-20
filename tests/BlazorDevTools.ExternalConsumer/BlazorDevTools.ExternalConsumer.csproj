@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <PackageReference Include="BlazorDevTools.Runtime" Version="0.1.0" />
+    <ProjectReference Include="..\..\src\BlazorDevTools.Runtime\BlazorDevTools.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

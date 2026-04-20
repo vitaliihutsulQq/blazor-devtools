@@ -1,0 +1,25 @@
+@inherits ComponentBase
+
+<section class="border border-info rounded-3 p-3 bg-white">
+    <h2 class="h5 mb-2">@Title</h2>
+    <p class="text-muted mb-2">This component uses an explicit `partial class : ComponentBase` code-behind and is tracked through the experimental activator proxy path.</p>
+    <p class="mb-1">Active item count: <strong>@Count</strong></p>
+
+    <div class="row g-2 mt-2">
+        <div class="col-md-6">
+            <ExperimentalProxySummaryCard Title="Orders" Count="@Count" Status="@(ShowDetails ? "Live" : "Hidden")" IsActive="@ShowDetails" />
+        </div>
+        <div class="col-md-6">
+            <ExperimentalProxySummaryCard Title="Warnings" Count="@(Math.Max(1, Count / 2))" Status="@(ShowDetails ? "Watching" : "Muted")" IsActive="@(!ShowDetails)" />
+        </div>
+    </div>
+
+    @if (ShowDetails)
+    {
+        <ul class="mb-0">
+            <li>Tracking mode: proxy activator</li>
+            <li>Base type in code-behind: `ComponentBase`</li>
+            <li>Inheritance from `DevtoolsComponentBase`: not required for this component</li>
+        </ul>
+    }
+</section>

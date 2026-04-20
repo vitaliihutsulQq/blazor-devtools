@@ -1,0 +1,11 @@
+@typeparam TItem
+
+<div class="rounded-3 border p-3 bg-light h-100">
+    <strong>Generic list</strong>
+    <ul class="mb-0 mt-2">
+        @foreach (var item in Items)
+        {
+            <li>@item</li>
+        }
+    </ul>
+</div>

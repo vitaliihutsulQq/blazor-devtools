@@ -1,0 +1,11 @@
+@inherits DevtoolsComponentBase
+
+<div class="rounded-3 border p-3 bg-light h-100" @attributes="DevToolsMarkerAttributes">
+    <strong>Already tracked widget</strong>
+    <p class="mb-0 text-muted">@Message</p>
+</div>
+
+@code {
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+}

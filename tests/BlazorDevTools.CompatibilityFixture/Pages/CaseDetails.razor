@@ -1,0 +1,24 @@
+@page "/cases/{CaseId:int}"
+
+<PageTitle>Case Details</PageTitle>
+
+<h1>Compatibility Case</h1>
+
+<p class="text-muted">This page exercises representative large-app component patterns: partial `.razor` + `.razor.cs`, explicit `: ComponentBase`, routing, injection, parameters, nested hierarchies, and async lifecycle work.</p>
+
+<CaseWorkspace CaseId="@CaseId" HighlightCriticalOnly="@HighlightCriticalOnly" />
+
+<div class="mt-4">
+    <h2 class="h5">Intentionally skipped generator shapes</h2>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <SkippedSealedPanel Label="Sealed component" />
+        </div>
+        <div class="col-md-4">
+            <SkippedGenericList Items="Categories" />
+        </div>
+        <div class="col-md-4">
+            <AlreadyTrackedWidget Message="Already tracked through explicit DevtoolsComponentBase inheritance" />
+        </div>
+    </div>
+</div>

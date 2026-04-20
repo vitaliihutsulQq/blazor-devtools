@@ -46,3 +46,5 @@ public abstract class AppComponentBase : DevtoolsComponentBase
 ```
 
 Apply that `_Imports.razor` pattern so your components appear in the Blazor DevTools tree without per-file opt-in.
+
+For large apps that already use many partial `.razor.cs : ComponentBase` components, the package also includes an experimental proxy/generator tracking path automatically. You do not need to add a separate analyzer package manually.
