@@ -75,8 +75,15 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
                 symbol.Name,
                 $"{symbol.Name}__BlazorDevToolsProxy",
                 fullyQualifiedTypeName,
-                fullyQualifiedTypeName.Replace(symbol.Name, $"{symbol.Name}__BlazorDevToolsProxy")),
+                GetFullyQualifiedProxyTypeName(containingNamespace, $"{symbol.Name}__BlazorDevToolsProxy")),
             null);
+    }
+
+    private static string GetFullyQualifiedProxyTypeName(string? containingNamespace, string proxyTypeName)
+    {
+        return string.IsNullOrWhiteSpace(containingNamespace)
+            ? $"global::{proxyTypeName}"
+            : $"global::{containingNamespace}.{proxyTypeName}";
     }
 
     private static bool IsEligibleForGeneration(INamedTypeSymbol symbol, ClassDeclarationSyntax classDeclaration)
