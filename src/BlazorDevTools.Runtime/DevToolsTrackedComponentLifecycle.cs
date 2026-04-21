@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BlazorDevTools.Protocol;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -9,6 +10,7 @@ public sealed class DevToolsTrackedComponentLifecycle
     private readonly ComponentTracker componentTracker;
     private readonly DevToolsAutoRefreshScheduler autoRefreshScheduler;
     private readonly IDevToolsExternalComponentTracker? externalComponentTracker;
+    private readonly ComponentLifecycleMetricsCollector lifecycleMetricsCollector = new();
     private bool isRegistered;
     private string? resolvedParentComponentId;
 
@@ -36,6 +38,7 @@ public sealed class DevToolsTrackedComponentLifecycle
 
         externalComponentTracker?.EnsureInitialized();
         resolvedParentComponentId = parentComponentId ?? resolvedParentComponentId ?? externalComponentTracker?.ResolveParentComponentId(componentType);
+        lifecycleMetricsCollector.MarkTrackingStarted();
 
         componentTracker.RegisterComponent(ComponentId, componentType, resolvedParentComponentId);
 
@@ -51,8 +54,28 @@ public sealed class DevToolsTrackedComponentLifecycle
             componentTracker.UpdateInjectedServices(ComponentId, injectedServices);
         }
 
+        PublishMetricsIfRegistered();
         autoRefreshScheduler.RequestRefresh();
         isRegistered = true;
+        PublishMetricsIfRegistered();
+    }
+
+    public void RecordOnInitialized(TimeSpan duration)
+    {
+        lifecycleMetricsCollector.RecordOnInitialized(duration);
+        PublishMetricsIfRegistered();
+    }
+
+    public void RecordOnInitializedAsync(TimeSpan duration)
+    {
+        lifecycleMetricsCollector.RecordOnInitializedAsync(duration);
+        PublishMetricsIfRegistered();
+    }
+
+    public void RecordOnParametersSet(TimeSpan duration)
+    {
+        lifecycleMetricsCollector.RecordOnParametersSet(duration);
+        PublishMetricsIfRegistered();
     }
 
     public void OnAfterRender()
@@ -62,8 +85,14 @@ public sealed class DevToolsTrackedComponentLifecycle
             return;
         }
 
-        componentTracker.IncrementRenderCount(ComponentId);
+        PublishMetricsIfRegistered();
         autoRefreshScheduler.RequestRefresh();
+    }
+
+    public void RecordOnAfterRender(TimeSpan duration)
+    {
+        lifecycleMetricsCollector.RecordOnAfterRender(duration);
+        PublishMetricsIfRegistered();
     }
 
     public void Dispose()
@@ -83,12 +112,15 @@ public sealed class DevToolsTrackedComponentLifecycle
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(childContent);
 
-        builder.OpenComponent<CascadingValue<string>>(0);
-        builder.AddAttribute(1, "Name", DevtoolsComponentBase.ParentComponentIdCascadeName);
-        builder.AddAttribute(2, "Value", ComponentId);
-        builder.AddAttribute(3, "IsFixed", true);
-        builder.AddAttribute(4, "ChildContent", childContent);
-        builder.CloseComponent();
+        RenderMeasured(builder, renderBuilder =>
+        {
+            renderBuilder.OpenComponent<CascadingValue<string>>(0);
+            renderBuilder.AddAttribute(1, "Name", DevtoolsComponentBase.ParentComponentIdCascadeName);
+            renderBuilder.AddAttribute(2, "Value", ComponentId);
+            renderBuilder.AddAttribute(3, "IsFixed", true);
+            renderBuilder.AddAttribute(4, "ChildContent", childContent);
+            renderBuilder.CloseComponent();
+        });
     }
 
     public void RenderWithParentScopeAndDomMarker(RenderTreeBuilder builder, RenderFragment childContent)
@@ -96,15 +128,36 @@ public sealed class DevToolsTrackedComponentLifecycle
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(childContent);
 
-        builder.OpenElement(0, "blazor-devtools-anchor");
-        builder.AddAttribute(1, DevToolsDomMarker.AttributeName, ComponentId);
-        builder.AddAttribute(2, "style", "display: contents;");
-        builder.OpenComponent<CascadingValue<string>>(3);
-        builder.AddAttribute(4, "Name", DevtoolsComponentBase.ParentComponentIdCascadeName);
-        builder.AddAttribute(5, "Value", ComponentId);
-        builder.AddAttribute(6, "IsFixed", true);
-        builder.AddAttribute(7, "ChildContent", childContent);
-        builder.CloseComponent();
-        builder.CloseElement();
+        RenderMeasured(builder, renderBuilder =>
+        {
+            renderBuilder.OpenElement(0, "blazor-devtools-anchor");
+            renderBuilder.AddAttribute(1, DevToolsDomMarker.AttributeName, ComponentId);
+            renderBuilder.AddAttribute(2, "style", "display: contents;");
+            renderBuilder.OpenComponent<CascadingValue<string>>(3);
+            renderBuilder.AddAttribute(4, "Name", DevtoolsComponentBase.ParentComponentIdCascadeName);
+            renderBuilder.AddAttribute(5, "Value", ComponentId);
+            renderBuilder.AddAttribute(6, "IsFixed", true);
+            renderBuilder.AddAttribute(7, "ChildContent", childContent);
+            renderBuilder.CloseComponent();
+            renderBuilder.CloseElement();
+        });
+    }
+
+    private void RenderMeasured(RenderTreeBuilder builder, Action<RenderTreeBuilder> renderContent)
+    {
+        var startedAt = Stopwatch.GetTimestamp();
+        renderContent(builder);
+        lifecycleMetricsCollector.RecordRender(Stopwatch.GetElapsedTime(startedAt));
+        PublishMetricsIfRegistered();
+    }
+
+    private void PublishMetricsIfRegistered()
+    {
+        if (!isRegistered)
+        {
+            return;
+        }
+
+        componentTracker.UpdateLifecycleMetrics(ComponentId, lifecycleMetricsCollector.BuildSnapshot());
     }
 }

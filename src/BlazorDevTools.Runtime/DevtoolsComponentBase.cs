@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using System.Diagnostics;
 
 namespace BlazorDevTools.Runtime;
 
@@ -41,19 +42,38 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
 
     protected string ComponentId => TrackingLifecycle.ComponentId;
 
+    protected override void OnInitialized()
+    {
+        var startedAt = Stopwatch.GetTimestamp();
+        base.OnInitialized();
+        trackingLifecycle?.RecordOnInitialized(Stopwatch.GetElapsedTime(startedAt));
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var startedAt = Stopwatch.GetTimestamp();
+        await base.OnInitializedAsync();
+        trackingLifecycle?.RecordOnInitializedAsync(Stopwatch.GetElapsedTime(startedAt));
+    }
+
     public override async Task SetParametersAsync(ParameterView parameters)
     {
+        var startedAt = Stopwatch.GetTimestamp();
         var capturedParameters = DevToolsParameterSnapshotFactory.Create(parameters, nameof(ParentComponentId));
         var injectedServices = ComponentInjectedServiceSnapshotFactory.Create(GetType());
 
         await base.SetParametersAsync(parameters);
 
         TrackingLifecycle.ApplySnapshot(GetType(), ParentComponentId, capturedParameters, injectedServices, DomMarkerId);
+        TrackingLifecycle.RecordOnParametersSet(Stopwatch.GetElapsedTime(startedAt));
     }
 
     protected override void OnAfterRender(bool firstRender)
     {
+        var startedAt = Stopwatch.GetTimestamp();
         base.OnAfterRender(firstRender);
+
+        trackingLifecycle?.RecordOnAfterRender(Stopwatch.GetElapsedTime(startedAt));
 
         trackingLifecycle?.OnAfterRender();
     }
