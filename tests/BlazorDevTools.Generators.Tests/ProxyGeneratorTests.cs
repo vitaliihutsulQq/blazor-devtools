@@ -29,7 +29,7 @@ public class NonPartialComponent : ComponentBase { }
 """;
 
         var result = RunGenerator(source);
-        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BlazorDevToolsGeneratedComponentProxyManifest_", StringComparison.Ordinal)).Value;
+        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BDTManifest_", StringComparison.Ordinal)).Value;
 
         Assert.That(result.GeneratedSources.Keys, Does.Contain("EligibleComponent__BlazorDevToolsProxy.g.cs"));
         Assert.That(manifest, Does.Contain("EligibleComponent__BlazorDevToolsProxy"));
@@ -52,7 +52,7 @@ public partial class SecondComponent : ComponentBase { }
 """;
 
         var result = RunGenerator(source);
-        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BlazorDevToolsGeneratedComponentProxyManifest_", StringComparison.Ordinal)).Value;
+        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BDTManifest_", StringComparison.Ordinal)).Value;
 
         Assert.That(manifest, Does.Contain("new(typeof(global::TestApp.FirstComponent), typeof(global::TestApp.FirstComponent__BlazorDevToolsProxy))"));
         Assert.That(manifest, Does.Contain("new(typeof(global::TestApp.SecondComponent), typeof(global::TestApp.SecondComponent__BlazorDevToolsProxy))"));
@@ -78,7 +78,7 @@ namespace A.B.C.Pages.TimeEntry
         var result = RunGenerator(source);
         var widgetProxy = result.GeneratedSources["Widget__BlazorDevToolsProxy.g.cs"];
         var timeEntryProxy = result.GeneratedSources["TimeEntry__BlazorDevToolsProxy.g.cs"];
-        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BlazorDevToolsGeneratedComponentProxyManifest_", StringComparison.Ordinal)).Value;
+        var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BDTManifest_", StringComparison.Ordinal)).Value;
 
         Assert.That(widgetProxy, Does.Contain("namespace A.B.C.Widget;"));
         Assert.That(timeEntryProxy, Does.Contain("namespace A.B.C.Pages.TimeEntry;"));
@@ -88,6 +88,25 @@ namespace A.B.C.Pages.TimeEntry
 
         Assert.That(manifest, Does.Not.Contain("global::A.B.C.Widget__BlazorDevToolsProxy"));
         Assert.That(manifest, Does.Not.Contain("global::A.B.C.Pages.TimeEntry__BlazorDevToolsProxy"));
+    }
+
+    [Test]
+    public void Generator_emits_automatic_dom_anchor_for_proxy_inspect_mode()
+    {
+        const string source = """
+using Microsoft.AspNetCore.Components;
+
+namespace TestApp;
+
+public partial class InspectableComponent : ComponentBase { }
+""";
+
+        var result = RunGenerator(source);
+        var proxy = result.GeneratedSources["InspectableComponent__BlazorDevToolsProxy.g.cs"];
+
+        Assert.That(proxy, Does.Contain("private string DomMarkerId => TrackingLifecycle.ComponentId;"));
+        Assert.That(proxy, Does.Contain("TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots, injectedServices, DomMarkerId);"));
+        Assert.That(proxy, Does.Contain("TrackingLifecycle.RenderWithParentScopeAndDomMarker(builder, base.BuildRenderTree);"));
     }
 
     [Test]

@@ -38,7 +38,7 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
             }
 
             productionContext.AddSource(
-                $"BlazorDevToolsGeneratedComponentProxyManifest_{manifestSuffix}.g.cs",
+                $"BDTManifest_{manifestSuffix}.g.cs",
                 SourceText.From(RenderManifest(candidates, manifestSuffix), Encoding.UTF8));
         });
     }
@@ -260,25 +260,31 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
         builder.AppendLine("    [Inject]");
         builder.AppendLine("    private DevToolsAutoRefreshScheduler AutoRefreshScheduler { get; set; } = default!;");
         builder.AppendLine();
+        builder.AppendLine("    [Inject]");
+        builder.AppendLine("    private IDevToolsExternalComponentTracker? ExternalComponentTracker { get; set; }");
+        builder.AppendLine();
         builder.AppendLine("    [CascadingParameter(Name = DevtoolsComponentBase.ParentComponentIdCascadeName)]");
         builder.AppendLine("    public string? ParentComponentId { get; set; }");
         builder.AppendLine();
         builder.Append("    public Type DevToolsOriginalComponentType => typeof(").Append(candidate.FullyQualifiedTypeName).AppendLine(");");
+        builder.AppendLine();
+        builder.AppendLine("    private string DomMarkerId => TrackingLifecycle.ComponentId;");
         builder.AppendLine();
         builder.AppendLine("    private DevToolsTrackedComponentLifecycle? trackingLifecycle;");
         builder.AppendLine();
         builder.AppendLine("    public override async Task SetParametersAsync(ParameterView parameters)");
         builder.AppendLine("    {");
         builder.AppendLine("        var snapshots = DevToolsParameterSnapshotFactory.Create(parameters, nameof(ParentComponentId));");
+        builder.AppendLine("        var injectedServices = ComponentInjectedServiceSnapshotFactory.Create(DevToolsOriginalComponentType);");
         builder.AppendLine();
         builder.AppendLine("        await base.SetParametersAsync(parameters);");
         builder.AppendLine();
-        builder.AppendLine("        TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots);");
+        builder.AppendLine("        TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots, injectedServices, DomMarkerId);");
         builder.AppendLine("    }");
         builder.AppendLine();
         builder.AppendLine("    protected override void BuildRenderTree(RenderTreeBuilder builder)");
         builder.AppendLine("    {");
-        builder.AppendLine("        TrackingLifecycle.RenderWithParentScope(builder, base.BuildRenderTree);");
+        builder.AppendLine("        TrackingLifecycle.RenderWithParentScopeAndDomMarker(builder, base.BuildRenderTree);");
         builder.AppendLine("    }");
         builder.AppendLine();
         builder.AppendLine("    protected override void OnAfterRender(bool firstRender)");
@@ -292,7 +298,7 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
         builder.AppendLine("        trackingLifecycle?.Dispose();");
         builder.AppendLine("    }");
         builder.AppendLine();
-        builder.AppendLine("    private DevToolsTrackedComponentLifecycle TrackingLifecycle => trackingLifecycle ??= new DevToolsTrackedComponentLifecycle(ComponentTracker, AutoRefreshScheduler);");
+        builder.AppendLine("    private DevToolsTrackedComponentLifecycle TrackingLifecycle => trackingLifecycle ??= new DevToolsTrackedComponentLifecycle(ComponentTracker, AutoRefreshScheduler, ExternalComponentTracker);");
         builder.AppendLine("}");
 
         return builder.ToString();

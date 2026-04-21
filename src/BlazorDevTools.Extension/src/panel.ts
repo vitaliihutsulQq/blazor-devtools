@@ -3,15 +3,22 @@ type ComponentNode = {
   name: string;
   fullTypeName: string;
   assemblyName: string;
-  domMarkerId: string | null;
-  parameters: ComponentParameterSnapshot[];
-  renderCount: number | null;
+  domMarkerId?: string | null;
+  parameters?: ComponentParameterSnapshot[];
+  injectedServices?: ComponentInjectedServiceSnapshot[];
+  renderCount?: number | null;
   children: ComponentNode[];
 };
 
 type ComponentParameterSnapshot = {
   name: string;
   value: string | null;
+};
+
+type ComponentInjectedServiceSnapshot = {
+  propertyName: string;
+  serviceTypeName: string;
+  fullServiceTypeName: string;
 };
 
 type ComponentTreeSnapshot = {
@@ -47,6 +54,7 @@ type TreeNodeViewModel = {
   parentId: string | null;
   childrenCount: number;
   parameters: ComponentParameterSnapshot[];
+  injectedServices: ComponentInjectedServiceSnapshot[];
   renderCount: number | null;
   children: TreeNodeViewModel[];
 };
@@ -298,6 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     wrapper.append(grid);
     wrapper.append(renderParameters(node.parameters));
+    wrapper.append(renderInjectedServices(node.injectedServices));
     return wrapper;
   }
 
@@ -333,6 +342,46 @@ document.addEventListener("DOMContentLoaded", () => {
       value.append(code);
 
       item.append(name, value);
+      list.append(item);
+    }
+
+    section.append(list);
+    return section;
+  }
+
+  function renderInjectedServices(injectedServices: ComponentInjectedServiceSnapshot[]): HTMLDivElement {
+    const section = document.createElement("div");
+    section.className = "services-section";
+
+    const title = document.createElement("h4");
+    title.className = "services-title";
+    title.textContent = "Injected Services";
+    section.append(title);
+
+    if (injectedServices.length === 0) {
+      section.append(createEmptyState("This component does not expose tracked injected services."));
+      return section;
+    }
+
+    const list = document.createElement("ul");
+    list.className = "service-list";
+
+    for (const service of injectedServices) {
+      const item = document.createElement("li");
+      item.className = "service-item";
+
+      const name = document.createElement("span");
+      name.className = "service-name";
+      name.textContent = service.propertyName;
+
+      const type = document.createElement("p");
+      type.className = "service-type";
+
+      const code = document.createElement("code");
+      code.textContent = service.fullServiceTypeName;
+      type.append(code);
+
+      item.append(name, type);
       list.append(item);
     }
 
@@ -409,10 +458,10 @@ function isComponentNode(payload: unknown): payload is ComponentNode {
     typeof candidate.name === "string" &&
     typeof candidate.fullTypeName === "string" &&
     typeof candidate.assemblyName === "string" &&
-    (candidate.domMarkerId === null || typeof candidate.domMarkerId === "string") &&
-    (candidate.renderCount === null || typeof candidate.renderCount === "number") &&
-    Array.isArray(candidate.parameters) &&
-    candidate.parameters.every(isComponentParameter) &&
+    (candidate.domMarkerId === undefined || candidate.domMarkerId === null || typeof candidate.domMarkerId === "string") &&
+    (candidate.renderCount === undefined || candidate.renderCount === null || typeof candidate.renderCount === "number") &&
+    (candidate.parameters === undefined || (Array.isArray(candidate.parameters) && candidate.parameters.every(isComponentParameter))) &&
+    (candidate.injectedServices === undefined || (Array.isArray(candidate.injectedServices) && candidate.injectedServices.every(isInjectedService))) &&
     Array.isArray(candidate.children) &&
     candidate.children.every(isComponentNode)
   );
@@ -427,6 +476,19 @@ function isComponentParameter(payload: unknown): payload is ComponentParameterSn
   return typeof candidate.name === "string" && (candidate.value === null || typeof candidate.value === "string");
 }
 
+function isInjectedService(payload: unknown): payload is ComponentInjectedServiceSnapshot {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  return (
+    typeof candidate.propertyName === "string" &&
+    typeof candidate.serviceTypeName === "string" &&
+    typeof candidate.fullServiceTypeName === "string"
+  );
+}
+
 function toTreeNode(node: ComponentNode, parentId: string | null): TreeNodeViewModel {
   const children = node.children.map((child) => toTreeNode(child, node.id));
   return {
@@ -434,11 +496,12 @@ function toTreeNode(node: ComponentNode, parentId: string | null): TreeNodeViewM
     name: node.name,
     fullTypeName: node.fullTypeName,
     assemblyName: node.assemblyName,
-    domMarkerId: node.domMarkerId,
+    domMarkerId: node.domMarkerId ?? null,
     parentId,
     childrenCount: children.length,
-    parameters: node.parameters,
-    renderCount: node.renderCount,
+    parameters: node.parameters ?? [],
+    injectedServices: node.injectedServices ?? [],
+    renderCount: node.renderCount ?? null,
     children
   };
 }
