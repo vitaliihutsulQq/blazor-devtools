@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageId>BlazorDevTools.Runtime</PackageId>
-    <Version>0.1.5</Version>
+    <Version>0.1.8</Version>
     <Authors>Blazor DevTools Contributors</Authors>
     <Company>Blazor DevTools</Company>
     <Description>Runtime integration package for Blazor WebAssembly apps using Blazor DevTools.</Description>
