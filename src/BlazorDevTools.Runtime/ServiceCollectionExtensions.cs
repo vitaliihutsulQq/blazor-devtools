@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<ComponentTracker>();
         services.TryAddScoped<DevToolsSnapshotBridge>();
         services.TryAddScoped<DevToolsAutoRefreshScheduler>();
+        services.TryAddScoped<IDevToolsExternalComponentTracker, DevToolsExternalComponentTracker>();
         services.Replace(ServiceDescriptor.Singleton<IComponentActivator, DevToolsComponentActivator>());
 
         return services;

@@ -5,6 +5,11 @@ namespace BlazorDevTools.Runtime;
 
 public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
 {
+    protected DevtoolsComponentBase()
+    {
+        DevToolsComponentRenderWrapper.TryWrap(this, (builder, childContent) => TrackingLifecycle.RenderWithParentScopeAndDomMarker(builder, childContent));
+    }
+
     public const string ParentComponentIdCascadeName = "BlazorDevTools.ParentComponentId";
 
     [Inject]
@@ -12,6 +17,9 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
 
     [Inject]
     private DevToolsAutoRefreshScheduler AutoRefreshScheduler { get; set; } = default!;
+
+    [Inject]
+    private IDevToolsExternalComponentTracker? ExternalComponentTracker { get; set; }
 
     [CascadingParameter(Name = ParentComponentIdCascadeName)]
     public string? ParentComponentId { get; set; }
@@ -36,10 +44,11 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
     public override async Task SetParametersAsync(ParameterView parameters)
     {
         var capturedParameters = DevToolsParameterSnapshotFactory.Create(parameters, nameof(ParentComponentId));
+        var injectedServices = ComponentInjectedServiceSnapshotFactory.Create(GetType());
 
         await base.SetParametersAsync(parameters);
 
-        TrackingLifecycle.ApplySnapshot(GetType(), ParentComponentId, capturedParameters, DomMarkerId);
+        TrackingLifecycle.ApplySnapshot(GetType(), ParentComponentId, capturedParameters, injectedServices, DomMarkerId);
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -59,5 +68,5 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
         TrackingLifecycle.RenderWithParentScope(builder, childContent);
     }
 
-    private DevToolsTrackedComponentLifecycle TrackingLifecycle => trackingLifecycle ??= new DevToolsTrackedComponentLifecycle(ComponentTracker, AutoRefreshScheduler);
+    private DevToolsTrackedComponentLifecycle TrackingLifecycle => trackingLifecycle ??= new DevToolsTrackedComponentLifecycle(ComponentTracker, AutoRefreshScheduler, ExternalComponentTracker);
 }

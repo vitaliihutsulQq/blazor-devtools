@@ -9,7 +9,7 @@
 
   let inspectModeActive = false;
   let overlayElement: HTMLDivElement | null = null;
-  let hoveredMarkerElement: HTMLElement | null = null;
+  let hoveredContext: InspectContext | null = null;
   let latestSnapshotMessage: unknown | null = null;
 
   window.addEventListener("message", (event) => {
@@ -62,8 +62,8 @@
     }
 
     const target = event.target instanceof Element ? event.target : null;
-    hoveredMarkerElement = findMarkerElement(target);
-    updateOverlay(hoveredMarkerElement);
+    hoveredContext = findInspectContext(target);
+    updateOverlay(hoveredContext?.overlayElement ?? null);
   }, true);
 
   document.addEventListener("click", (event) => {
@@ -75,8 +75,8 @@
     event.stopPropagation();
 
     const target = event.target instanceof Element ? event.target : null;
-    const markerElement = findMarkerElement(target);
-    const componentId = markerElement?.getAttribute(domMarkerAttributeName);
+    const inspectContext = findInspectContext(target);
+    const componentId = inspectContext?.componentId;
 
     if (componentId) {
       void safeSendRuntimeMessage({
@@ -98,13 +98,13 @@
 
   window.addEventListener("scroll", () => {
     if (inspectModeActive) {
-      updateOverlay(hoveredMarkerElement);
+      updateOverlay(hoveredContext?.overlayElement ?? null);
     }
   }, true);
 
   window.addEventListener("resize", () => {
     if (inspectModeActive) {
-      updateOverlay(hoveredMarkerElement);
+      updateOverlay(hoveredContext?.overlayElement ?? null);
     }
   });
 
@@ -114,7 +114,7 @@
     document.body?.style.setProperty("cursor", active ? "crosshair" : "");
 
     if (!active) {
-      hoveredMarkerElement = null;
+      hoveredContext = null;
       removeOverlay();
     }
 
@@ -142,7 +142,7 @@ async function safeSendRuntimeMessage(message: unknown): Promise<void> {
   }
 }
 
-  function updateOverlay(element: HTMLElement | null): void {
+  function updateOverlay(element: Element | null): void {
     if (!inspectModeActive || !element) {
       removeOverlay();
       return;
@@ -183,12 +183,20 @@ async function safeSendRuntimeMessage(message: unknown): Promise<void> {
     overlayElement = null;
   }
 
-  function findMarkerElement(target: Element | null): HTMLElement | null {
-    if (!target) {
+  function findInspectContext(target: Element | null): InspectContext | null {
+    if (!(target instanceof HTMLElement)) {
       return null;
     }
 
-    return target.closest(`[${domMarkerAttributeName}]`) as HTMLElement | null;
+    const markerElement = target.closest(`[${domMarkerAttributeName}]`) as HTMLElement | null;
+    if (!markerElement) {
+      return null;
+    }
+
+    return {
+      componentId: markerElement.getAttribute(domMarkerAttributeName),
+      overlayElement: target
+    };
   }
 
   function isSnapshotMessage(message: unknown): message is {
@@ -203,4 +211,9 @@ async function safeSendRuntimeMessage(message: unknown): Promise<void> {
     const candidate = message as Record<string, unknown>;
     return candidate.source === runtimeSource && candidate.messageType === snapshotMessageType;
   }
+
+  type InspectContext = {
+    componentId: string | null;
+    overlayElement: HTMLElement;
+  };
 })();

@@ -98,7 +98,7 @@ Current status:
 
 If a similar error appears again:
 
-- inspect generated files under `obj/Generated`
+- inspect generated files under the configured compiler-generated output folder, currently `obj/g` in the validation fixtures
 - compare the proxy declaration namespace to the manifest registration namespace
 - report the exact generated type pair that disagrees
 

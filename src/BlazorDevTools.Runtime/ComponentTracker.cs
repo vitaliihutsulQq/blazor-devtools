@@ -13,6 +13,22 @@ public sealed class ComponentTracker
         RegisterComponent(componentId, componentName, componentName, typeof(ComponentTracker).Assembly.GetName().Name ?? "Unknown", parentComponentId);
     }
 
+    public void RegisterSyntheticComponent(
+        string componentId,
+        string componentName,
+        string fullTypeName,
+        string assemblyName,
+        string? parentComponentId = null,
+        IReadOnlyList<ComponentParameterSnapshot>? parameters = null)
+    {
+        RegisterComponent(componentId, componentName, fullTypeName, assemblyName, parentComponentId);
+
+        if (parameters is not null)
+        {
+            UpdateParameters(componentId, parameters);
+        }
+    }
+
     public void RegisterComponent(string componentId, Type componentType, string? parentComponentId = null)
     {
         ArgumentNullException.ThrowIfNull(componentType);
@@ -38,6 +54,22 @@ public sealed class ComponentTracker
             }
 
             trackedComponent.Parameters = parameters;
+        }
+    }
+
+    public void UpdateInjectedServices(string componentId, IReadOnlyList<ComponentInjectedServiceSnapshot> injectedServices)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(componentId);
+        ArgumentNullException.ThrowIfNull(injectedServices);
+
+        lock (syncRoot)
+        {
+            if (!components.TryGetValue(componentId, out var trackedComponent))
+            {
+                return;
+            }
+
+            trackedComponent.InjectedServices = injectedServices;
         }
     }
 
@@ -164,6 +196,7 @@ public sealed class ComponentTracker
             component.AssemblyName,
             component.DomMarkerId,
             component.Parameters,
+            component.InjectedServices,
             component.RenderCount,
             children);
     }
@@ -189,6 +222,8 @@ public sealed class ComponentTracker
         public string? ParentComponentId { get; set; }
 
         public IReadOnlyList<ComponentParameterSnapshot> Parameters { get; set; } = [];
+
+        public IReadOnlyList<ComponentInjectedServiceSnapshot> InjectedServices { get; set; } = [];
 
         public int? RenderCount { get; set; }
 

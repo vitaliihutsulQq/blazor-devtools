@@ -82,6 +82,11 @@ public class ComponentTrackerTests
                 new("Title", "Dashboard"),
                 new("ItemCount", "12")
             ]);
+        tracker.UpdateInjectedServices(
+            "root",
+            [
+                new("WorkspaceService", "CaseWorkspaceService", "TestApp.Services.CaseWorkspaceService")
+            ]);
         tracker.SetDomMarker("root", "component-root");
         tracker.IncrementRenderCount("root");
         tracker.IncrementRenderCount("root");
@@ -92,6 +97,7 @@ public class ComponentTrackerTests
         Assert.That(root.FullTypeName, Is.EqualTo(typeof(FakeComponent).FullName));
         Assert.That(root.AssemblyName, Is.EqualTo(typeof(FakeComponent).Assembly.GetName().Name));
         Assert.That(root.DomMarkerId, Is.EqualTo("component-root"));
+        Assert.That(root.InjectedServices.Select(service => service.PropertyName), Is.EqualTo(new[] { "WorkspaceService" }));
         Assert.That(root.RenderCount, Is.EqualTo(2));
         Assert.That(root.Parameters.Select(parameter => parameter.Name), Is.EqualTo(new[] { "Title", "ItemCount" }));
     }

@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>obj/Generated</CompilerGeneratedFilesOutputPath>
+    <CompilerGeneratedFilesOutputPath>obj/g</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

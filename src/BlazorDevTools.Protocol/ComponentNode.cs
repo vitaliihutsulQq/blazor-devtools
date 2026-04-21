@@ -7,5 +7,6 @@ public sealed record ComponentNode(
     string AssemblyName,
     string? DomMarkerId,
     IReadOnlyList<ComponentParameterSnapshot> Parameters,
+    IReadOnlyList<ComponentInjectedServiceSnapshot> InjectedServices,
     int? RenderCount,
     IReadOnlyList<ComponentNode> Children);
