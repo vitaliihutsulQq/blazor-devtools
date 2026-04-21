@@ -73,6 +73,22 @@ public sealed class ComponentTracker
         }
     }
 
+    public void UpdateCascadingParameters(string componentId, IReadOnlyList<ComponentCascadingParameterSnapshot> cascadingParameters)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(componentId);
+        ArgumentNullException.ThrowIfNull(cascadingParameters);
+
+        lock (syncRoot)
+        {
+            if (!components.TryGetValue(componentId, out var trackedComponent))
+            {
+                return;
+            }
+
+            trackedComponent.CascadingParameters = cascadingParameters;
+        }
+    }
+
     public void UpdateLifecycleMetrics(string componentId, ComponentLifecycleMetricsSnapshot lifecycleMetrics)
     {
         ArgumentException.ThrowIfNullOrEmpty(componentId);
@@ -87,6 +103,22 @@ public sealed class ComponentTracker
 
             trackedComponent.LifecycleMetrics = lifecycleMetrics;
             trackedComponent.RenderCount = lifecycleMetrics.RenderCount;
+        }
+    }
+
+    public void UpdateRenderInfo(string componentId, ComponentRenderInfoSnapshot renderInfo)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(componentId);
+        ArgumentNullException.ThrowIfNull(renderInfo);
+
+        lock (syncRoot)
+        {
+            if (!components.TryGetValue(componentId, out var trackedComponent))
+            {
+                return;
+            }
+
+            trackedComponent.RenderInfo = renderInfo;
         }
     }
 
@@ -214,7 +246,9 @@ public sealed class ComponentTracker
             component.DomMarkerId,
             component.Parameters,
             component.InjectedServices,
+            component.CascadingParameters,
             component.LifecycleMetrics,
+            component.RenderInfo,
             component.RenderCount,
             children);
     }
@@ -243,7 +277,11 @@ public sealed class ComponentTracker
 
         public IReadOnlyList<ComponentInjectedServiceSnapshot> InjectedServices { get; set; } = [];
 
+        public IReadOnlyList<ComponentCascadingParameterSnapshot> CascadingParameters { get; set; } = [];
+
         public ComponentLifecycleMetricsSnapshot? LifecycleMetrics { get; set; }
+
+        public ComponentRenderInfoSnapshot? RenderInfo { get; set; }
 
         public int? RenderCount { get; set; }
 

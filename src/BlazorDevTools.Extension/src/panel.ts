@@ -6,7 +6,9 @@ type ComponentNode = {
   domMarkerId?: string | null;
   parameters?: ComponentParameterSnapshot[];
   injectedServices?: ComponentInjectedServiceSnapshot[];
+  cascadingParameters?: ComponentCascadingParameterSnapshot[];
   lifecycleMetrics?: ComponentLifecycleMetricsSnapshot | null;
+  renderInfo?: ComponentRenderInfoSnapshot | null;
   renderCount?: number | null;
   children: ComponentNode[];
 };
@@ -22,6 +24,13 @@ type ComponentInjectedServiceSnapshot = {
   fullServiceTypeName: string;
 };
 
+type ComponentCascadingParameterSnapshot = {
+  propertyName: string;
+  valueTypeName: string;
+  fullValueTypeName: string;
+  providerHint: string | null;
+};
+
 type ComponentLifecycleMetricsSnapshot = {
   timeToFirstRenderMs: number | null;
   renderCount: number;
@@ -32,6 +41,18 @@ type ComponentLifecycleMetricsSnapshot = {
   onParametersSetTimeMs: number | null;
   onAfterRenderTimeMs: number | null;
   totalRenderTimeMs: number;
+};
+
+type ComponentRenderCauseSnapshot = {
+  renderSequence: number;
+  cause: string;
+  isApproximate: boolean;
+  details: string | null;
+};
+
+type ComponentRenderInfoSnapshot = {
+  latestRenderCause: ComponentRenderCauseSnapshot | null;
+  recentRenderCauses: ComponentRenderCauseSnapshot[];
 };
 
 type ComponentTreeSnapshot = {
@@ -68,7 +89,9 @@ type TreeNodeViewModel = {
   childrenCount: number;
   parameters: ComponentParameterSnapshot[];
   injectedServices: ComponentInjectedServiceSnapshot[];
+  cascadingParameters: ComponentCascadingParameterSnapshot[];
   lifecycleMetrics: ComponentLifecycleMetricsSnapshot | null;
+  renderInfo: ComponentRenderInfoSnapshot | null;
   renderCount: number | null;
   children: TreeNodeViewModel[];
 };
@@ -321,7 +344,9 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.append(grid);
     wrapper.append(renderParameters(node.parameters));
     wrapper.append(renderInjectedServices(node.injectedServices));
+    wrapper.append(renderCascadingParameters(node.cascadingParameters));
     wrapper.append(renderLifecycleMetrics(node.lifecycleMetrics));
+    wrapper.append(renderWhyDidThisRender(node.renderInfo));
     return wrapper;
   }
 
@@ -404,6 +429,47 @@ document.addEventListener("DOMContentLoaded", () => {
     return section;
   }
 
+  function renderCascadingParameters(cascadingParameters: ComponentCascadingParameterSnapshot[]): HTMLDivElement {
+    const section = document.createElement("div");
+    section.className = "cascading-section";
+
+    const title = document.createElement("h4");
+    title.className = "cascading-title";
+    title.textContent = "Cascading Values";
+    section.append(title);
+
+    if (cascadingParameters.length === 0) {
+      section.append(createEmptyState("This component does not expose tracked cascading parameters."));
+      return section;
+    }
+
+    const list = document.createElement("ul");
+    list.className = "cascading-list";
+
+    for (const cascadingParameter of cascadingParameters) {
+      const item = document.createElement("li");
+      item.className = "cascading-item";
+
+      const name = document.createElement("span");
+      name.className = "cascading-name";
+      name.textContent = cascadingParameter.providerHint
+        ? `${cascadingParameter.propertyName} (Name: ${cascadingParameter.providerHint})`
+        : cascadingParameter.propertyName;
+
+      const type = document.createElement("p");
+      type.className = "cascading-type";
+      const code = document.createElement("code");
+      code.textContent = cascadingParameter.fullValueTypeName;
+      type.append(code);
+
+      item.append(name, type);
+      list.append(item);
+    }
+
+    section.append(list);
+    return section;
+  }
+
   function renderLifecycleMetrics(lifecycleMetrics: ComponentLifecycleMetricsSnapshot | null): HTMLDivElement {
     const section = document.createElement("div");
     section.className = "metrics-section";
@@ -433,6 +499,50 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     section.append(grid);
+    return section;
+  }
+
+  function renderWhyDidThisRender(renderInfo: ComponentRenderInfoSnapshot | null): HTMLDivElement {
+    const section = document.createElement("div");
+    section.className = "render-info-section";
+
+    const title = document.createElement("h4");
+    title.className = "render-info-title";
+    title.textContent = "Why Did This Render?";
+    section.append(title);
+
+    if (!renderInfo || !renderInfo.latestRenderCause) {
+      section.append(createEmptyState("No recent render-cause information is available for this component."));
+      return section;
+    }
+
+    section.append(createMetricCard("Latest known cause", formatRenderCause(renderInfo.latestRenderCause)));
+
+    if (renderInfo.recentRenderCauses.length > 0) {
+      const list = document.createElement("ul");
+      list.className = "render-cause-list";
+
+      for (const cause of [...renderInfo.recentRenderCauses].reverse()) {
+        const item = document.createElement("li");
+        item.className = "render-cause-item";
+
+        const name = document.createElement("span");
+        name.className = "render-cause-name";
+        name.textContent = `#${cause.renderSequence} ${cause.cause}${cause.isApproximate ? " (approx.)" : ""}`;
+
+        const details = document.createElement("p");
+        details.className = "render-cause-details";
+        const code = document.createElement("code");
+        code.textContent = cause.details ?? "No additional details";
+        details.append(code);
+
+        item.append(name, details);
+        list.append(item);
+      }
+
+      section.append(list);
+    }
+
     return section;
   }
 
@@ -471,6 +581,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     card.append(label, value);
     return card;
+  }
+
+  function formatRenderCause(cause: ComponentRenderCauseSnapshot): string {
+    return `${cause.cause}${cause.isApproximate ? " (approx.)" : ""}`;
   }
 
   function createEmptyState(text: string): HTMLParagraphElement {
@@ -527,7 +641,9 @@ function isComponentNode(payload: unknown): payload is ComponentNode {
     (candidate.renderCount === undefined || candidate.renderCount === null || typeof candidate.renderCount === "number") &&
     (candidate.parameters === undefined || (Array.isArray(candidate.parameters) && candidate.parameters.every(isComponentParameter))) &&
     (candidate.injectedServices === undefined || (Array.isArray(candidate.injectedServices) && candidate.injectedServices.every(isInjectedService))) &&
+    (candidate.cascadingParameters === undefined || (Array.isArray(candidate.cascadingParameters) && candidate.cascadingParameters.every(isCascadingParameter))) &&
     (candidate.lifecycleMetrics === undefined || candidate.lifecycleMetrics === null || isLifecycleMetrics(candidate.lifecycleMetrics)) &&
+    (candidate.renderInfo === undefined || candidate.renderInfo === null || isRenderInfo(candidate.renderInfo)) &&
     Array.isArray(candidate.children) &&
     candidate.children.every(isComponentNode)
   );
@@ -574,6 +690,47 @@ function isLifecycleMetrics(payload: unknown): payload is ComponentLifecycleMetr
   );
 }
 
+function isCascadingParameter(payload: unknown): payload is ComponentCascadingParameterSnapshot {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  return (
+    typeof candidate.propertyName === "string" &&
+    typeof candidate.valueTypeName === "string" &&
+    typeof candidate.fullValueTypeName === "string" &&
+    (candidate.providerHint === null || typeof candidate.providerHint === "string")
+  );
+}
+
+function isRenderCause(payload: unknown): payload is ComponentRenderCauseSnapshot {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  return (
+    typeof candidate.renderSequence === "number" &&
+    typeof candidate.cause === "string" &&
+    typeof candidate.isApproximate === "boolean" &&
+    (candidate.details === null || typeof candidate.details === "string")
+  );
+}
+
+function isRenderInfo(payload: unknown): payload is ComponentRenderInfoSnapshot {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  return (
+    (candidate.latestRenderCause === null || isRenderCause(candidate.latestRenderCause)) &&
+    Array.isArray(candidate.recentRenderCauses) &&
+    candidate.recentRenderCauses.every(isRenderCause)
+  );
+}
+
 function toTreeNode(node: ComponentNode, parentId: string | null): TreeNodeViewModel {
   const children = node.children.map((child) => toTreeNode(child, node.id));
   return {
@@ -586,7 +743,9 @@ function toTreeNode(node: ComponentNode, parentId: string | null): TreeNodeViewM
     childrenCount: children.length,
     parameters: node.parameters ?? [],
     injectedServices: node.injectedServices ?? [],
+    cascadingParameters: node.cascadingParameters ?? [],
     lifecycleMetrics: node.lifecycleMetrics ?? null,
+    renderInfo: node.renderInfo ?? null,
     renderCount: node.renderCount ?? null,
     children
   };

@@ -15,8 +15,10 @@ public class ComponentLifecycleMetricsCollectorTests
         collector.RecordOnInitialized(TimeSpan.FromMilliseconds(0.3));
         collector.RecordOnInitializedAsync(TimeSpan.FromMilliseconds(2.4));
         collector.RecordOnParametersSet(TimeSpan.FromMilliseconds(1.2));
+        collector.RecordStateHasChanged();
         collector.RecordRender(TimeSpan.FromMilliseconds(3.5));
         collector.RecordOnAfterRender(TimeSpan.FromMilliseconds(0.4));
+        collector.RecordStateHasChanged();
         collector.RecordRender(TimeSpan.FromMilliseconds(2.5));
 
         var snapshot = collector.BuildSnapshot();

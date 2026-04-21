@@ -88,6 +88,12 @@ public class ComponentTrackerTests
             [
                 new("WorkspaceService", "CaseWorkspaceService", "TestApp.Services.CaseWorkspaceService")
             ]);
+        tracker.UpdateCascadingParameters(
+            "root",
+            [
+                new("EditContext", "EditContext", "Microsoft.AspNetCore.Components.Forms.EditContext", null),
+                new("ThemeName", "String", "System.String", "ThemeName")
+            ]);
         tracker.UpdateLifecycleMetrics(
             "root",
             new ComponentLifecycleMetricsSnapshot(
@@ -109,6 +115,7 @@ public class ComponentTrackerTests
         Assert.That(root.AssemblyName, Is.EqualTo(typeof(FakeComponent).Assembly.GetName().Name));
         Assert.That(root.DomMarkerId, Is.EqualTo("component-root"));
         Assert.That(root.InjectedServices.Select(service => service.PropertyName), Is.EqualTo(new[] { "WorkspaceService" }));
+        Assert.That(root.CascadingParameters.Select(parameter => parameter.PropertyName), Is.EqualTo(new[] { "EditContext", "ThemeName" }));
         Assert.That(root.LifecycleMetrics?.TimeToFirstRenderMs, Is.EqualTo(12.5));
         Assert.That(root.LifecycleMetrics?.AverageRenderTimeMs, Is.EqualTo(2.75));
         Assert.That(root.LifecycleMetrics?.StateHasChangedCount, Is.EqualTo(2));

@@ -40,10 +40,14 @@ public sealed class ComponentLifecycleMetricsCollector
         onAfterRenderTimeMs = duration.TotalMilliseconds;
     }
 
+    public void RecordStateHasChanged()
+    {
+        stateHasChangedCount++;
+    }
+
     public void RecordRender(TimeSpan duration)
     {
         renderCount++;
-        stateHasChangedCount++;
         totalRenderTimeMs += duration.TotalMilliseconds;
 
         if (timeToFirstRenderMs is null && trackingStartedTimestamp is long started)

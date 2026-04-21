@@ -273,6 +273,12 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
         builder.AppendLine();
         builder.AppendLine("    private DevToolsTrackedComponentLifecycle? trackingLifecycle;");
         builder.AppendLine();
+        builder.AppendLine("    protected new void StateHasChanged()");
+        builder.AppendLine("    {");
+        builder.AppendLine("        TrackingLifecycle.MarkStateHasChanged();");
+        builder.AppendLine("        base.StateHasChanged();");
+        builder.AppendLine("    }");
+        builder.AppendLine();
         builder.AppendLine("    protected override void OnInitialized()");
         builder.AppendLine("    {");
         builder.AppendLine("        var startedAt = Stopwatch.GetTimestamp();");
@@ -292,10 +298,11 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
         builder.AppendLine("        var startedAt = Stopwatch.GetTimestamp();");
         builder.AppendLine("        var snapshots = DevToolsParameterSnapshotFactory.Create(parameters, nameof(ParentComponentId));");
         builder.AppendLine("        var injectedServices = ComponentInjectedServiceSnapshotFactory.Create(DevToolsOriginalComponentType);");
+        builder.AppendLine("        var cascadingParameters = ComponentCascadingParameterSnapshotFactory.Create(DevToolsOriginalComponentType);");
         builder.AppendLine();
         builder.AppendLine("        await base.SetParametersAsync(parameters);");
         builder.AppendLine();
-        builder.AppendLine("        TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots, injectedServices, DomMarkerId);");
+        builder.AppendLine("        TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots, injectedServices, cascadingParameters, DomMarkerId);");
         builder.AppendLine("        TrackingLifecycle.RecordOnParametersSet(Stopwatch.GetElapsedTime(startedAt));");
         builder.AppendLine("    }");
         builder.AppendLine();

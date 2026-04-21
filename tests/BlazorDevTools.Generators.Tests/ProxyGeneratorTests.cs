@@ -105,7 +105,7 @@ public partial class InspectableComponent : ComponentBase { }
         var proxy = result.GeneratedSources["InspectableComponent__BlazorDevToolsProxy.g.cs"];
 
         Assert.That(proxy, Does.Contain("private string DomMarkerId => TrackingLifecycle.ComponentId;"));
-        Assert.That(proxy, Does.Contain("TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots, injectedServices, DomMarkerId);"));
+        Assert.That(proxy, Does.Contain("TrackingLifecycle.ApplySnapshot(DevToolsOriginalComponentType, ParentComponentId, snapshots, injectedServices, cascadingParameters, DomMarkerId);"));
         Assert.That(proxy, Does.Contain("TrackingLifecycle.RenderWithParentScopeAndDomMarker(builder, base.BuildRenderTree);"));
     }
 
