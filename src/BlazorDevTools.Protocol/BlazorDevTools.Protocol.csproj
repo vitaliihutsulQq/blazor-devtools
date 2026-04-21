@@ -7,7 +7,7 @@
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
 		<PackageId>BlazorDevTools.Protocol</PackageId>
-		<Version>0.1.4</Version>
+		<Version>0.1.5</Version>
 		<Authors>Blazor DevTools Contributors</Authors>
 		<Company>Blazor DevTools</Company>
 		<Description>Protocol contracts used internally by Blazor DevTools runtime and extension messaging.</Description>
