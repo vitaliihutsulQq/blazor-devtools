@@ -1,3 +1,4 @@
+using BlazorDevTools.Protocol;
 using BlazorDevTools.Runtime;
 using Microsoft.AspNetCore.Components;
 
@@ -87,9 +88,19 @@ public class ComponentTrackerTests
             [
                 new("WorkspaceService", "CaseWorkspaceService", "TestApp.Services.CaseWorkspaceService")
             ]);
+        tracker.UpdateLifecycleMetrics(
+            "root",
+            new ComponentLifecycleMetricsSnapshot(
+                TimeToFirstRenderMs: 12.5,
+                RenderCount: 2,
+                AverageRenderTimeMs: 2.75,
+                StateHasChangedCount: 2,
+                OnInitializedTimeMs: 0.4,
+                OnInitializedAsyncTimeMs: 4.2,
+                OnParametersSetTimeMs: 1.1,
+                OnAfterRenderTimeMs: 0.7,
+                TotalRenderTimeMs: 5.5));
         tracker.SetDomMarker("root", "component-root");
-        tracker.IncrementRenderCount("root");
-        tracker.IncrementRenderCount("root");
 
         var snapshot = tracker.BuildSnapshot();
         var root = snapshot.Roots[0];
@@ -98,6 +109,9 @@ public class ComponentTrackerTests
         Assert.That(root.AssemblyName, Is.EqualTo(typeof(FakeComponent).Assembly.GetName().Name));
         Assert.That(root.DomMarkerId, Is.EqualTo("component-root"));
         Assert.That(root.InjectedServices.Select(service => service.PropertyName), Is.EqualTo(new[] { "WorkspaceService" }));
+        Assert.That(root.LifecycleMetrics?.TimeToFirstRenderMs, Is.EqualTo(12.5));
+        Assert.That(root.LifecycleMetrics?.AverageRenderTimeMs, Is.EqualTo(2.75));
+        Assert.That(root.LifecycleMetrics?.StateHasChangedCount, Is.EqualTo(2));
         Assert.That(root.RenderCount, Is.EqualTo(2));
         Assert.That(root.Parameters.Select(parameter => parameter.Name), Is.EqualTo(new[] { "Title", "ItemCount" }));
     }

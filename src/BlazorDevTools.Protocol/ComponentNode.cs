@@ -8,5 +8,6 @@ public sealed record ComponentNode(
     string? DomMarkerId,
     IReadOnlyList<ComponentParameterSnapshot> Parameters,
     IReadOnlyList<ComponentInjectedServiceSnapshot> InjectedServices,
+    ComponentLifecycleMetricsSnapshot? LifecycleMetrics,
     int? RenderCount,
     IReadOnlyList<ComponentNode> Children);

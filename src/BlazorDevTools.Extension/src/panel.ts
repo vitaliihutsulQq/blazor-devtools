@@ -6,6 +6,7 @@ type ComponentNode = {
   domMarkerId?: string | null;
   parameters?: ComponentParameterSnapshot[];
   injectedServices?: ComponentInjectedServiceSnapshot[];
+  lifecycleMetrics?: ComponentLifecycleMetricsSnapshot | null;
   renderCount?: number | null;
   children: ComponentNode[];
 };
@@ -19,6 +20,18 @@ type ComponentInjectedServiceSnapshot = {
   propertyName: string;
   serviceTypeName: string;
   fullServiceTypeName: string;
+};
+
+type ComponentLifecycleMetricsSnapshot = {
+  timeToFirstRenderMs: number | null;
+  renderCount: number;
+  averageRenderTimeMs: number | null;
+  stateHasChangedCount: number;
+  onInitializedTimeMs: number | null;
+  onInitializedAsyncTimeMs: number | null;
+  onParametersSetTimeMs: number | null;
+  onAfterRenderTimeMs: number | null;
+  totalRenderTimeMs: number;
 };
 
 type ComponentTreeSnapshot = {
@@ -55,6 +68,7 @@ type TreeNodeViewModel = {
   childrenCount: number;
   parameters: ComponentParameterSnapshot[];
   injectedServices: ComponentInjectedServiceSnapshot[];
+  lifecycleMetrics: ComponentLifecycleMetricsSnapshot | null;
   renderCount: number | null;
   children: TreeNodeViewModel[];
 };
@@ -307,6 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.append(grid);
     wrapper.append(renderParameters(node.parameters));
     wrapper.append(renderInjectedServices(node.injectedServices));
+    wrapper.append(renderLifecycleMetrics(node.lifecycleMetrics));
     return wrapper;
   }
 
@@ -389,6 +404,38 @@ document.addEventListener("DOMContentLoaded", () => {
     return section;
   }
 
+  function renderLifecycleMetrics(lifecycleMetrics: ComponentLifecycleMetricsSnapshot | null): HTMLDivElement {
+    const section = document.createElement("div");
+    section.className = "metrics-section";
+
+    const title = document.createElement("h4");
+    title.className = "metrics-title";
+    title.textContent = "Lifecycle Metrics";
+    section.append(title);
+
+    if (!lifecycleMetrics) {
+      section.append(createEmptyState("Lifecycle metrics are not available for this component."));
+      return section;
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "metrics-grid";
+    grid.append(
+      createMetricCard("Time to first render", formatDuration(lifecycleMetrics.timeToFirstRenderMs)),
+      createMetricCard("Render count", lifecycleMetrics.renderCount.toString()),
+      createMetricCard("Avg render time", formatDuration(lifecycleMetrics.averageRenderTimeMs)),
+      createMetricCard("StateHasChanged count", `${lifecycleMetrics.stateHasChangedCount} (approx.)`),
+      createMetricCard("OnInitialized", formatDuration(lifecycleMetrics.onInitializedTimeMs)),
+      createMetricCard("OnInitializedAsync", formatDuration(lifecycleMetrics.onInitializedAsyncTimeMs)),
+      createMetricCard("OnParametersSet", formatDuration(lifecycleMetrics.onParametersSetTimeMs)),
+      createMetricCard("OnAfterRender", formatDuration(lifecycleMetrics.onAfterRenderTimeMs)),
+      createMetricCard("Total render time", formatDuration(lifecycleMetrics.totalRenderTimeMs))
+    );
+
+    section.append(grid);
+    return section;
+  }
+
   function createDetailCard(labelText: string, valueText: string): HTMLDivElement {
     const card = document.createElement("div");
     card.className = "detail-card";
@@ -400,6 +447,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const value = document.createElement("p");
     value.className = "detail-value";
 
+    const code = document.createElement("code");
+    code.textContent = valueText;
+    value.append(code);
+
+    card.append(label, value);
+    return card;
+  }
+
+  function createMetricCard(labelText: string, valueText: string): HTMLDivElement {
+    const card = document.createElement("div");
+    card.className = "metric-card";
+
+    const label = document.createElement("span");
+    label.className = "metric-label";
+    label.textContent = labelText;
+
+    const value = document.createElement("p");
+    value.className = "metric-value";
     const code = document.createElement("code");
     code.textContent = valueText;
     value.append(code);
@@ -462,6 +527,7 @@ function isComponentNode(payload: unknown): payload is ComponentNode {
     (candidate.renderCount === undefined || candidate.renderCount === null || typeof candidate.renderCount === "number") &&
     (candidate.parameters === undefined || (Array.isArray(candidate.parameters) && candidate.parameters.every(isComponentParameter))) &&
     (candidate.injectedServices === undefined || (Array.isArray(candidate.injectedServices) && candidate.injectedServices.every(isInjectedService))) &&
+    (candidate.lifecycleMetrics === undefined || candidate.lifecycleMetrics === null || isLifecycleMetrics(candidate.lifecycleMetrics)) &&
     Array.isArray(candidate.children) &&
     candidate.children.every(isComponentNode)
   );
@@ -489,6 +555,25 @@ function isInjectedService(payload: unknown): payload is ComponentInjectedServic
   );
 }
 
+function isLifecycleMetrics(payload: unknown): payload is ComponentLifecycleMetricsSnapshot {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  return (
+    (candidate.timeToFirstRenderMs === null || typeof candidate.timeToFirstRenderMs === "number") &&
+    typeof candidate.renderCount === "number" &&
+    (candidate.averageRenderTimeMs === null || typeof candidate.averageRenderTimeMs === "number") &&
+    typeof candidate.stateHasChangedCount === "number" &&
+    (candidate.onInitializedTimeMs === null || typeof candidate.onInitializedTimeMs === "number") &&
+    (candidate.onInitializedAsyncTimeMs === null || typeof candidate.onInitializedAsyncTimeMs === "number") &&
+    (candidate.onParametersSetTimeMs === null || typeof candidate.onParametersSetTimeMs === "number") &&
+    (candidate.onAfterRenderTimeMs === null || typeof candidate.onAfterRenderTimeMs === "number") &&
+    typeof candidate.totalRenderTimeMs === "number"
+  );
+}
+
 function toTreeNode(node: ComponentNode, parentId: string | null): TreeNodeViewModel {
   const children = node.children.map((child) => toTreeNode(child, node.id));
   return {
@@ -501,9 +586,22 @@ function toTreeNode(node: ComponentNode, parentId: string | null): TreeNodeViewM
     childrenCount: children.length,
     parameters: node.parameters ?? [],
     injectedServices: node.injectedServices ?? [],
+    lifecycleMetrics: node.lifecycleMetrics ?? null,
     renderCount: node.renderCount ?? null,
     children
   };
+}
+
+function formatDuration(durationMs: number | null): string {
+  if (durationMs === null) {
+    return "Unavailable";
+  }
+
+  if (durationMs < 1) {
+    return `${Math.round(durationMs * 1000)} us`;
+  }
+
+  return `${durationMs.toFixed(durationMs >= 10 ? 1 : 2)} ms`;
 }
 
 function findNodeById(nodes: TreeNodeViewModel[], nodeId: string): TreeNodeViewModel | null {

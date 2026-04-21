@@ -73,6 +73,23 @@ public sealed class ComponentTracker
         }
     }
 
+    public void UpdateLifecycleMetrics(string componentId, ComponentLifecycleMetricsSnapshot lifecycleMetrics)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(componentId);
+        ArgumentNullException.ThrowIfNull(lifecycleMetrics);
+
+        lock (syncRoot)
+        {
+            if (!components.TryGetValue(componentId, out var trackedComponent))
+            {
+                return;
+            }
+
+            trackedComponent.LifecycleMetrics = lifecycleMetrics;
+            trackedComponent.RenderCount = lifecycleMetrics.RenderCount;
+        }
+    }
+
     public void IncrementRenderCount(string componentId)
     {
         ArgumentException.ThrowIfNullOrEmpty(componentId);
@@ -197,6 +214,7 @@ public sealed class ComponentTracker
             component.DomMarkerId,
             component.Parameters,
             component.InjectedServices,
+            component.LifecycleMetrics,
             component.RenderCount,
             children);
     }
@@ -224,6 +242,8 @@ public sealed class ComponentTracker
         public IReadOnlyList<ComponentParameterSnapshot> Parameters { get; set; } = [];
 
         public IReadOnlyList<ComponentInjectedServiceSnapshot> InjectedServices { get; set; } = [];
+
+        public ComponentLifecycleMetricsSnapshot? LifecycleMetrics { get; set; }
 
         public int? RenderCount { get; set; }
 
