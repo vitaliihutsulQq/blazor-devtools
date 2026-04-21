@@ -1,5 +1,6 @@
 @page "/devtools-debug"
 @inject DevToolsSnapshotBridge SnapshotBridge
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>DevTools Debug</PageTitle>
 
@@ -21,6 +22,12 @@
         Dashboard items: @dashboardItemCount | Dashboard highlighted: @dashboardHighlighted | Navigation visible: @showNavigation
     </div>
 
+    <EditForm EditContext="@editContext">
+        <CascadingValue Name="ThemeName" Value="themeName" IsFixed="true">
+            <CascadingInspectorProbe />
+        </CascadingValue>
+    </EditForm>
+
     <CascadingValue Name="@ParentComponentCascadeName" Value="ComponentId" IsFixed="true">
         <div class="mb-3">
             <ExperimentalProxyPanel Title="Large-app proxy proof of concept" Count="@dashboardItemCount" ShowDetails="@showNavigation" />
@@ -41,7 +48,16 @@
     private int navigationItemCount = 5;
     private bool navigationHighlighted;
     private bool showNavigation = true;
+    private readonly SampleEditModel editModel = new();
+    private EditContext editContext = default!;
+    private string themeName = "Ocean";
     private string statusMessage = "Automatic snapshot refresh is active. Use the controls above to verify live updates.";
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        editContext = new EditContext(editModel);
+    }
 
     private void IncrementDashboardItems()
     {
@@ -69,5 +85,11 @@
     {
         await SnapshotBridge.PostSnapshotAsync();
         statusMessage = $"Manual snapshot exported at {DateTime.Now:T}. Automatic refresh remains enabled.";
+    }
+
+    private sealed class SampleEditModel
+    {
+        [Required]
+        public string Name { get; set; } = "Demo";
     }
 }

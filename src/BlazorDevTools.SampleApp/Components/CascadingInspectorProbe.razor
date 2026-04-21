@@ -1,0 +1,15 @@
+@inherits DevtoolsComponentBase
+
+<div class="rounded-3 border p-3 bg-white mt-3" @attributes="DevToolsMarkerAttributes">
+    <h3 class="h6 mb-2">Cascading probe</h3>
+    <p class="mb-1 text-muted">Theme: @ThemeName</p>
+    <p class="mb-0 text-muted">EditContext available: @(EditContext is null ? "No" : "Yes")</p>
+</div>
+
+@code {
+    [CascadingParameter]
+    public EditContext? EditContext { get; set; }
+
+    [CascadingParameter(Name = "ThemeName")]
+    public string? ThemeName { get; set; }
+}

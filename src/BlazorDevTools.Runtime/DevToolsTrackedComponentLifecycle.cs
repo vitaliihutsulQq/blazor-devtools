@@ -11,6 +11,7 @@ public sealed class DevToolsTrackedComponentLifecycle
     private readonly DevToolsAutoRefreshScheduler autoRefreshScheduler;
     private readonly IDevToolsExternalComponentTracker? externalComponentTracker;
     private readonly ComponentLifecycleMetricsCollector lifecycleMetricsCollector = new();
+    private readonly ComponentRenderCauseCollector renderCauseCollector = new();
     private bool isRegistered;
     private string? resolvedParentComponentId;
 
@@ -31,6 +32,7 @@ public sealed class DevToolsTrackedComponentLifecycle
         string? parentComponentId,
         IReadOnlyList<ComponentParameterSnapshot> parameters,
         IReadOnlyList<ComponentInjectedServiceSnapshot>? injectedServices = null,
+        IReadOnlyList<ComponentCascadingParameterSnapshot>? cascadingParameters = null,
         string? domMarkerId = null)
     {
         ArgumentNullException.ThrowIfNull(componentType);
@@ -39,6 +41,7 @@ public sealed class DevToolsTrackedComponentLifecycle
         externalComponentTracker?.EnsureInitialized();
         resolvedParentComponentId = parentComponentId ?? resolvedParentComponentId ?? externalComponentTracker?.ResolveParentComponentId(componentType);
         lifecycleMetricsCollector.MarkTrackingStarted();
+        renderCauseCollector.ObserveParameters(parameters, isRegistered);
 
         componentTracker.RegisterComponent(ComponentId, componentType, resolvedParentComponentId);
 
@@ -54,28 +57,40 @@ public sealed class DevToolsTrackedComponentLifecycle
             componentTracker.UpdateInjectedServices(ComponentId, injectedServices);
         }
 
-        PublishMetricsIfRegistered();
+        if (cascadingParameters is not null)
+        {
+            componentTracker.UpdateCascadingParameters(ComponentId, cascadingParameters);
+        }
+
+        PublishInspectorDataIfRegistered();
         autoRefreshScheduler.RequestRefresh();
         isRegistered = true;
-        PublishMetricsIfRegistered();
+        PublishInspectorDataIfRegistered();
     }
 
     public void RecordOnInitialized(TimeSpan duration)
     {
         lifecycleMetricsCollector.RecordOnInitialized(duration);
-        PublishMetricsIfRegistered();
+        PublishInspectorDataIfRegistered();
     }
 
     public void RecordOnInitializedAsync(TimeSpan duration)
     {
         lifecycleMetricsCollector.RecordOnInitializedAsync(duration);
-        PublishMetricsIfRegistered();
+        PublishInspectorDataIfRegistered();
     }
 
     public void RecordOnParametersSet(TimeSpan duration)
     {
         lifecycleMetricsCollector.RecordOnParametersSet(duration);
-        PublishMetricsIfRegistered();
+        PublishInspectorDataIfRegistered();
+    }
+
+    public void MarkStateHasChanged()
+    {
+        lifecycleMetricsCollector.RecordStateHasChanged();
+        renderCauseCollector.MarkStateHasChanged();
+        PublishInspectorDataIfRegistered();
     }
 
     public void OnAfterRender()
@@ -85,14 +100,14 @@ public sealed class DevToolsTrackedComponentLifecycle
             return;
         }
 
-        PublishMetricsIfRegistered();
+        PublishInspectorDataIfRegistered();
         autoRefreshScheduler.RequestRefresh();
     }
 
     public void RecordOnAfterRender(TimeSpan duration)
     {
         lifecycleMetricsCollector.RecordOnAfterRender(duration);
-        PublishMetricsIfRegistered();
+        PublishInspectorDataIfRegistered();
     }
 
     public void Dispose()
@@ -146,12 +161,14 @@ public sealed class DevToolsTrackedComponentLifecycle
     private void RenderMeasured(RenderTreeBuilder builder, Action<RenderTreeBuilder> renderContent)
     {
         var startedAt = Stopwatch.GetTimestamp();
+        var isFirstRender = lifecycleMetricsCollector.BuildSnapshot().RenderCount == 0;
         renderContent(builder);
         lifecycleMetricsCollector.RecordRender(Stopwatch.GetElapsedTime(startedAt));
-        PublishMetricsIfRegistered();
+        renderCauseCollector.RecordRender(isFirstRender);
+        PublishInspectorDataIfRegistered();
     }
 
-    private void PublishMetricsIfRegistered()
+    private void PublishInspectorDataIfRegistered()
     {
         if (!isRegistered)
         {
@@ -159,5 +176,6 @@ public sealed class DevToolsTrackedComponentLifecycle
         }
 
         componentTracker.UpdateLifecycleMetrics(ComponentId, lifecycleMetricsCollector.BuildSnapshot());
+        componentTracker.UpdateRenderInfo(ComponentId, renderCauseCollector.BuildSnapshot());
     }
 }

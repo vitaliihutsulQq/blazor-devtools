@@ -42,6 +42,12 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
 
     protected string ComponentId => TrackingLifecycle.ComponentId;
 
+    protected new void StateHasChanged()
+    {
+        TrackingLifecycle.MarkStateHasChanged();
+        base.StateHasChanged();
+    }
+
     protected override void OnInitialized()
     {
         var startedAt = Stopwatch.GetTimestamp();
@@ -61,10 +67,11 @@ public abstract class DevtoolsComponentBase : ComponentBase, IDisposable
         var startedAt = Stopwatch.GetTimestamp();
         var capturedParameters = DevToolsParameterSnapshotFactory.Create(parameters, nameof(ParentComponentId));
         var injectedServices = ComponentInjectedServiceSnapshotFactory.Create(GetType());
+        var cascadingParameters = ComponentCascadingParameterSnapshotFactory.Create(GetType());
 
         await base.SetParametersAsync(parameters);
 
-        TrackingLifecycle.ApplySnapshot(GetType(), ParentComponentId, capturedParameters, injectedServices, DomMarkerId);
+        TrackingLifecycle.ApplySnapshot(GetType(), ParentComponentId, capturedParameters, injectedServices, cascadingParameters, DomMarkerId);
         TrackingLifecycle.RecordOnParametersSet(Stopwatch.GetElapsedTime(startedAt));
     }
 
