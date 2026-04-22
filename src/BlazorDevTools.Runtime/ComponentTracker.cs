@@ -122,6 +122,37 @@ public sealed class ComponentTracker
         }
     }
 
+    public bool TryReparentDetachedComponent(Type componentType, string parentComponentId)
+    {
+        ArgumentNullException.ThrowIfNull(componentType);
+        ArgumentException.ThrowIfNullOrEmpty(parentComponentId);
+
+        lock (syncRoot)
+        {
+            if (!components.TryGetValue(parentComponentId, out var parentComponent))
+            {
+                return false;
+            }
+
+            var candidate = components.Values
+                .Where(component =>
+                    component.Id != parentComponentId &&
+                    component.FullTypeName == (componentType.FullName ?? componentType.Name) &&
+                    (component.ParentComponentId is null || !components.ContainsKey(component.ParentComponentId)))
+                .OrderByDescending(component => component.Sequence)
+                .FirstOrDefault();
+
+            if (candidate is null)
+            {
+                return false;
+            }
+
+            candidate.ParentComponentId = parentComponentId;
+            parentComponent.ChildComponentIds.Add(candidate.Id);
+            return true;
+        }
+    }
+
     public void IncrementRenderCount(string componentId)
     {
         ArgumentException.ThrowIfNullOrEmpty(componentId);

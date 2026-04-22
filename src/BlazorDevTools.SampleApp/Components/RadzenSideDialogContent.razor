@@ -1,0 +1,10 @@
+@inherits ComponentBase
+
+<section class="p-2">
+    <h2 class="h5">Side dialog content</h2>
+    <p class="text-muted">This side dialog component should appear as a child under the synthetic RadzenSideDialog root.</p>
+    <p class="mb-1">Orders: @OrderCount</p>
+    <p class="mb-3 text-muted">Show details: @ShowDetails</p>
+
+    <RadzenInlineDialogPanel Count="@OrderCount" Emphasis="@(ShowDetails ? "SideDetailed" : "SideCompact")" />
+</section>

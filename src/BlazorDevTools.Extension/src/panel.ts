@@ -79,6 +79,8 @@ type InspectModePayload = {
   active: boolean;
 };
 
+type DetailsTab = "overview" | "parameters" | "dependencies" | "performance" | "render-cause";
+
 type TreeNodeViewModel = {
   id: string;
   name: string;
@@ -94,6 +96,58 @@ type TreeNodeViewModel = {
   renderInfo: ComponentRenderInfoSnapshot | null;
   renderCount: number | null;
   children: TreeNodeViewModel[];
+};
+
+type MetricSeverity = "good" | "warning" | "bad" | "neutral";
+
+type DurationThresholds = {
+  goodMaxMs: number;
+  warningMaxMs: number;
+};
+
+type CountThresholds = {
+  goodMax: number;
+  warningMax: number;
+};
+
+type MetricCardOptions = {
+  severity?: MetricSeverity;
+  emphasizeLabel?: boolean;
+};
+
+const firstRenderDurationThresholds: DurationThresholds = {
+  goodMaxMs: 8,
+  warningMaxMs: 16
+};
+
+const averageRenderDurationThresholds: DurationThresholds = {
+  goodMaxMs: 1,
+  warningMaxMs: 4
+};
+
+const totalRenderDurationThresholds: DurationThresholds = {
+  goodMaxMs: 10,
+  warningMaxMs: 25
+};
+
+const standardLifecycleDurationThresholds: DurationThresholds = {
+  goodMaxMs: 0.5,
+  warningMaxMs: 2
+};
+
+const asyncLifecycleDurationThresholds: DurationThresholds = {
+  goodMaxMs: 2,
+  warningMaxMs: 10
+};
+
+const renderCountThresholds: CountThresholds = {
+  goodMax: 1,
+  warningMax: 4
+};
+
+const stateHasChangedCountThresholds: CountThresholds = {
+  goodMax: 1,
+  warningMax: 3
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -113,6 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentTree: TreeNodeViewModel[] = [];
   let inspectModeActive = false;
   let searchTerm = "";
+  let selectedDetailsTab: DetailsTab = "overview";
 
   const render = () => {
     treeRoot.replaceChildren();
@@ -322,32 +377,117 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderDetails(node: TreeNodeViewModel): HTMLDivElement {
     const wrapper = document.createElement("div");
+    wrapper.className = "details-shell";
+
+    const sticky = document.createElement("div");
+    sticky.className = "details-sticky";
 
     const title = document.createElement("h3");
     title.className = "details-name";
     title.textContent = node.name;
-    wrapper.append(title);
+    sticky.append(title);
 
-    const grid = document.createElement("div");
-    grid.className = "details-grid";
-    grid.append(
-      createDetailCard("Component name", node.name),
-      createDetailCard("Full type name", node.fullTypeName),
-      createDetailCard("Assembly name", node.assemblyName),
-      createDetailCard("Component id", node.id),
-      createDetailCard("DOM marker", node.domMarkerId ?? "Unavailable"),
-      createDetailCard("Parent id", node.parentId ?? "Root component"),
-      createDetailCard("Children count", node.childrenCount.toString()),
-      createDetailCard("Render count", node.renderCount === null ? "Unavailable" : node.renderCount.toString())
+    const subtitle = document.createElement("p");
+    subtitle.className = "details-subtitle";
+    subtitle.textContent = node.fullTypeName;
+    sticky.append(subtitle);
+
+    const summaryGrid = document.createElement("div");
+    summaryGrid.className = "summary-grid";
+    summaryGrid.append(
+      createSummaryCard("Render Count", node.renderCount === null ? "Unavailable" : node.renderCount.toString(), {
+        severity: getSeverityFromCount(node.renderCount, renderCountThresholds),
+        emphasizeLabel: true
+      }),
+      createSummaryCard("Time to First Render", formatDuration(node.lifecycleMetrics?.timeToFirstRenderMs ?? null), {
+        severity: getSeverityFromDuration(node.lifecycleMetrics?.timeToFirstRenderMs ?? null, firstRenderDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createSummaryCard("Avg Render Time", formatDuration(node.lifecycleMetrics?.averageRenderTimeMs ?? null), {
+        severity: getSeverityFromDuration(node.lifecycleMetrics?.averageRenderTimeMs ?? null, averageRenderDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createSummaryCard("Latest Render Cause", node.renderInfo?.latestRenderCause ? formatRenderCause(node.renderInfo.latestRenderCause) : "Unavailable", {
+        severity: "neutral",
+        emphasizeLabel: true
+      })
+    );
+    sticky.append(summaryGrid);
+
+    sticky.append(renderTabNavigation());
+    wrapper.append(sticky);
+
+    const panel = document.createElement("div");
+    panel.className = "tab-panel";
+
+    switch (selectedDetailsTab) {
+      case "overview":
+        panel.append(renderOverview(node));
+        break;
+      case "parameters":
+        panel.append(renderParameters(node.parameters));
+        break;
+      case "dependencies":
+        panel.append(renderInjectedServices(node.injectedServices), renderCascadingParameters(node.cascadingParameters));
+        break;
+      case "performance":
+        panel.append(renderLifecycleMetrics(node.lifecycleMetrics));
+        break;
+      case "render-cause":
+        panel.append(renderWhyDidThisRender(node.renderInfo));
+        break;
+    }
+
+    wrapper.append(panel);
+    return wrapper;
+  }
+
+  function renderOverview(node: TreeNodeViewModel): HTMLDivElement {
+    const section = document.createElement("div");
+    section.className = "overview-grid";
+    section.append(
+      createOverviewItem("Component name", node.name),
+      createOverviewItem("Full type name", node.fullTypeName),
+      createOverviewItem("Assembly name", node.assemblyName),
+      createOverviewItem("Component id", node.id),
+      createOverviewItem("DOM marker", node.domMarkerId ?? "Unavailable"),
+      createOverviewItem("Parent id", node.parentId ?? "Root component"),
+      createOverviewItem("Children count", node.childrenCount.toString()),
+      createOverviewItem("Render count", node.renderCount === null ? "Unavailable" : node.renderCount.toString())
     );
 
-    wrapper.append(grid);
-    wrapper.append(renderParameters(node.parameters));
-    wrapper.append(renderInjectedServices(node.injectedServices));
-    wrapper.append(renderCascadingParameters(node.cascadingParameters));
-    wrapper.append(renderLifecycleMetrics(node.lifecycleMetrics));
-    wrapper.append(renderWhyDidThisRender(node.renderInfo));
-    return wrapper;
+    return section;
+  }
+
+  function renderTabNavigation(): HTMLDivElement {
+    const tabs = document.createElement("div");
+    tabs.className = "tabs";
+
+    const tabDefinitions: Array<{ id: DetailsTab; label: string }> = [
+      { id: "overview", label: "Overview" },
+      { id: "parameters", label: "Parameters" },
+      { id: "dependencies", label: "Dependencies" },
+      { id: "performance", label: "Performance" },
+      { id: "render-cause", label: "Render Cause" }
+    ];
+
+    for (const tabDefinition of tabDefinitions) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "tab-button";
+      if (selectedDetailsTab === tabDefinition.id) {
+        button.classList.add("is-active");
+      }
+
+      button.textContent = tabDefinition.label;
+      button.addEventListener("click", () => {
+        selectedDetailsTab = tabDefinition.id;
+        render();
+      });
+      tabs.append(button);
+    }
+
+    return tabs;
   }
 
   function renderParameters(parameters: ComponentParameterSnapshot[]): HTMLDivElement {
@@ -487,15 +627,42 @@ document.addEventListener("DOMContentLoaded", () => {
     const grid = document.createElement("div");
     grid.className = "metrics-grid";
     grid.append(
-      createMetricCard("Time to first render", formatDuration(lifecycleMetrics.timeToFirstRenderMs)),
-      createMetricCard("Render count", lifecycleMetrics.renderCount.toString()),
-      createMetricCard("Avg render time", formatDuration(lifecycleMetrics.averageRenderTimeMs)),
-      createMetricCard("StateHasChanged count", `${lifecycleMetrics.stateHasChangedCount} (approx.)`),
-      createMetricCard("OnInitialized", formatDuration(lifecycleMetrics.onInitializedTimeMs)),
-      createMetricCard("OnInitializedAsync", formatDuration(lifecycleMetrics.onInitializedAsyncTimeMs)),
-      createMetricCard("OnParametersSet", formatDuration(lifecycleMetrics.onParametersSetTimeMs)),
-      createMetricCard("OnAfterRender", formatDuration(lifecycleMetrics.onAfterRenderTimeMs)),
-      createMetricCard("Total render time", formatDuration(lifecycleMetrics.totalRenderTimeMs))
+      createMetricCard("Time to first render", formatDuration(lifecycleMetrics.timeToFirstRenderMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.timeToFirstRenderMs, firstRenderDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("Render count", lifecycleMetrics.renderCount.toString(), {
+        severity: getSeverityFromCount(lifecycleMetrics.renderCount, renderCountThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("Avg render time", formatDuration(lifecycleMetrics.averageRenderTimeMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.averageRenderTimeMs, averageRenderDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("StateHasChanged count", `${lifecycleMetrics.stateHasChangedCount} (approx.)`, {
+        severity: getSeverityFromCount(lifecycleMetrics.stateHasChangedCount, stateHasChangedCountThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("OnInitialized", formatDuration(lifecycleMetrics.onInitializedTimeMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.onInitializedTimeMs, standardLifecycleDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("OnInitializedAsync", formatDuration(lifecycleMetrics.onInitializedAsyncTimeMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.onInitializedAsyncTimeMs, asyncLifecycleDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("OnParametersSet", formatDuration(lifecycleMetrics.onParametersSetTimeMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.onParametersSetTimeMs, standardLifecycleDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("OnAfterRender", formatDuration(lifecycleMetrics.onAfterRenderTimeMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.onAfterRenderTimeMs, standardLifecycleDurationThresholds),
+        emphasizeLabel: true
+      }),
+      createMetricCard("Total render time", formatDuration(lifecycleMetrics.totalRenderTimeMs), {
+        severity: getSeverityFromDuration(lifecycleMetrics.totalRenderTimeMs, totalRenderDurationThresholds),
+        emphasizeLabel: true
+      })
     );
 
     section.append(grid);
@@ -516,7 +683,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return section;
     }
 
-    section.append(createMetricCard("Latest known cause", formatRenderCause(renderInfo.latestRenderCause)));
+    section.append(createMetricCard("Latest known cause", formatRenderCause(renderInfo.latestRenderCause), {
+      severity: "neutral",
+      emphasizeLabel: true
+    }));
 
     if (renderInfo.recentRenderCauses.length > 0) {
       const list = document.createElement("ul");
@@ -565,22 +735,69 @@ document.addEventListener("DOMContentLoaded", () => {
     return card;
   }
 
-  function createMetricCard(labelText: string, valueText: string): HTMLDivElement {
+  function createMetricCard(labelText: string, valueText: string, options: MetricCardOptions = {}): HTMLDivElement {
+    const severity = options.severity ?? "neutral";
     const card = document.createElement("div");
     card.className = "metric-card";
+    card.dataset.severity = severity;
 
     const label = document.createElement("span");
     label.className = "metric-label";
+    if (options.emphasizeLabel) {
+      label.classList.add("metric-label--performance");
+    }
     label.textContent = labelText;
 
     const value = document.createElement("p");
     value.className = "metric-value";
+    value.classList.add(`metric-value--${severity}`);
     const code = document.createElement("code");
     code.textContent = valueText;
     value.append(code);
 
     card.append(label, value);
     return card;
+  }
+
+  function createSummaryCard(labelText: string, valueText: string, options: MetricCardOptions = {}): HTMLDivElement {
+    const severity = options.severity ?? "neutral";
+    const card = document.createElement("div");
+    card.className = "summary-card";
+    card.dataset.severity = severity;
+
+    const label = document.createElement("span");
+    label.className = "summary-label";
+    if (options.emphasizeLabel) {
+      label.classList.add("summary-label--performance");
+    }
+    label.textContent = labelText;
+
+    const value = document.createElement("p");
+    value.className = "summary-value";
+    value.classList.add(`summary-value--${severity}`);
+    value.textContent = valueText;
+
+    card.append(label, value);
+    return card;
+  }
+
+  function createOverviewItem(labelText: string, valueText: string): HTMLDivElement {
+    const item = document.createElement("div");
+    item.className = "overview-item";
+
+    const label = document.createElement("span");
+    label.className = "overview-label";
+    label.textContent = labelText;
+
+    const value = document.createElement("p");
+    value.className = "overview-value";
+
+    const code = document.createElement("code");
+    code.textContent = valueText;
+    value.append(code);
+
+    item.append(label, value);
+    return item;
   }
 
   function formatRenderCause(cause: ComponentRenderCauseSnapshot): string {
@@ -761,6 +978,38 @@ function formatDuration(durationMs: number | null): string {
   }
 
   return `${durationMs.toFixed(durationMs >= 10 ? 1 : 2)} ms`;
+}
+
+function getSeverityFromDuration(durationMs: number | null, thresholds: DurationThresholds): MetricSeverity {
+  if (durationMs === null || !Number.isFinite(durationMs)) {
+    return "neutral";
+  }
+
+  if (durationMs <= thresholds.goodMaxMs) {
+    return "good";
+  }
+
+  if (durationMs <= thresholds.warningMaxMs) {
+    return "warning";
+  }
+
+  return "bad";
+}
+
+function getSeverityFromCount(count: number | null, thresholds: CountThresholds): MetricSeverity {
+  if (count === null || !Number.isFinite(count)) {
+    return "neutral";
+  }
+
+  if (count <= thresholds.goodMax) {
+    return "good";
+  }
+
+  if (count <= thresholds.warningMax) {
+    return "warning";
+  }
+
+  return "bad";
 }
 
 function findNodeById(nodes: TreeNodeViewModel[], nodeId: string): TreeNodeViewModel | null {

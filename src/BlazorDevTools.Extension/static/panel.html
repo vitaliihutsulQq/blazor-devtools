@@ -5,15 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Blazor DevTools Panel</title>
     <style>
+      :root {
+        --panel-bg: #f3f4f6;
+        --surface-bg: #ffffff;
+        --surface-subtle-bg: #f8fafc;
+        --surface-border: #e2e8f0;
+        --text-primary: #1f2937;
+        --text-muted: #64748b;
+        --text-subtle: #475569;
+        --metric-label-gold: #b99a5e;
+        --metric-good: #4f8f63;
+        --metric-good-bg: #f4faf5;
+        --metric-good-border: #cfe2d4;
+        --metric-warning: #c98232;
+        --metric-warning-bg: #fff8f1;
+        --metric-warning-border: #ecd7bc;
+        --metric-bad: #c86a6a;
+        --metric-bad-bg: #fff5f5;
+        --metric-bad-border: #efcece;
+        --metric-neutral: #8791a3;
+        --metric-neutral-bg: #f7f9fc;
+        --metric-neutral-border: #dbe2ea;
+      }
+
+      html,
       body {
+        height: 100%;
         margin: 0;
         font-family: Segoe UI, sans-serif;
-        background: #f3f4f6;
-        color: #1f2937;
+        background: var(--panel-bg);
+        color: var(--text-primary);
+        overflow: hidden;
       }
 
       main {
+        height: 100vh;
+        box-sizing: border-box;
         padding: 16px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
       }
 
       .status {
@@ -68,7 +99,8 @@
         display: grid;
         grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.9fr);
         gap: 16px;
-        min-height: 420px;
+        min-height: 0;
+        flex: 1;
       }
 
       .surface {
@@ -95,9 +127,11 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
+        overflow: hidden;
       }
 
       .tree-scroll {
+        flex: 1;
         overflow: auto;
         padding: 12px;
       }
@@ -178,28 +212,145 @@
       .details-pane {
         display: flex;
         flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
       }
 
-      .details-content {
-        padding: 16px;
+      .details-scroll {
+        flex: 1;
+        overflow: auto;
+        min-height: 0;
+      }
+
+      .details-shell {
+        padding: 0 16px 16px;
+      }
+
+      .details-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 16px 0 12px;
+        background: linear-gradient(to bottom, #ffffff 0%, #ffffff 85%, rgba(255,255,255,0.94) 100%);
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 16px;
       }
 
       .details-name {
-        margin: 0 0 16px;
+        margin: 0;
         font-size: 20px;
+      }
+
+      .details-subtitle {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 13px;
+        word-break: break-word;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .summary-card {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
+      }
+
+      .summary-label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+      }
+
+      .summary-label--performance {
+        color: var(--metric-label-gold);
+      }
+
+      .summary-value {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+        word-break: break-word;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      .tab-button {
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #334155;
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tab-button.is-active {
+        background: #dbeafe;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+      }
+
+      .tab-panel {
+        min-height: 0;
       }
 
       .details-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
+      }
+
+      .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 14px;
+      }
+
+      .overview-item {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
+      }
+
+      .overview-label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+      }
+
+      .overview-value {
+        margin: 0;
+        font-size: 13px;
+        word-break: break-word;
       }
 
       .detail-card {
         padding: 12px;
         border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
       }
 
       .detail-label {
@@ -317,36 +468,36 @@
       .parameter-item {
         padding: 12px;
         border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
       }
 
       .service-item {
         padding: 12px;
         border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
       }
 
       .cascading-item {
         padding: 12px;
         border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
       }
 
       .metric-card {
         padding: 12px;
         border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
       }
 
       .render-cause-item {
         padding: 12px;
         border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
       }
 
       .parameter-name {
@@ -382,7 +533,11 @@
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #64748b;
+        color: var(--text-muted);
+      }
+
+      .metric-label--performance {
+        color: var(--metric-label-gold);
       }
 
       .render-cause-name {
@@ -391,7 +546,7 @@
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #64748b;
+        color: var(--metric-label-gold);
       }
 
       .parameter-value {
@@ -420,6 +575,53 @@
         font-size: 13px;
         line-height: 1.5;
         word-break: break-word;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .summary-card[data-severity="good"],
+      .metric-card[data-severity="good"] {
+        background: var(--metric-good-bg);
+        border-color: var(--metric-good-border);
+      }
+
+      .summary-card[data-severity="warning"],
+      .metric-card[data-severity="warning"] {
+        background: var(--metric-warning-bg);
+        border-color: var(--metric-warning-border);
+      }
+
+      .summary-card[data-severity="bad"],
+      .metric-card[data-severity="bad"] {
+        background: var(--metric-bad-bg);
+        border-color: var(--metric-bad-border);
+      }
+
+      .summary-card[data-severity="neutral"],
+      .metric-card[data-severity="neutral"] {
+        background: var(--metric-neutral-bg);
+        border-color: var(--metric-neutral-border);
+      }
+
+      .summary-value--good,
+      .metric-value--good {
+        color: var(--metric-good);
+      }
+
+      .summary-value--warning,
+      .metric-value--warning {
+        color: var(--metric-warning);
+      }
+
+      .summary-value--bad,
+      .metric-value--bad {
+        color: var(--metric-bad);
+      }
+
+      .summary-value--neutral,
+      .metric-value--neutral,
+      .render-cause-details {
+        color: var(--metric-neutral);
       }
 
       .render-cause-details {
@@ -431,6 +633,12 @@
 
       @media (max-width: 720px) {
         .panel-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-grid,
+        .overview-grid,
+        .details-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -464,7 +672,7 @@
           <header class="pane-header">
             <h2>Selection</h2>
           </header>
-          <div id="details-root" class="details-content">
+          <div id="details-root" class="details-scroll">
             <p class="empty-state">Select a component node to inspect its metadata.</p>
           </div>
         </aside>
