@@ -10,6 +10,7 @@
 <div class="d-flex flex-wrap gap-2 mb-3">
     <RadzenButton Text="Open component dialog" Click="@OpenComponentDialogAsync" />
     <RadzenButton Text="Open fragment dialog" ButtonStyle="ButtonStyle.Secondary" Click="@OpenFragmentDialogAsync" />
+    <RadzenButton Text="Open side dialog" ButtonStyle="ButtonStyle.Info" Click="@OpenSideDialogAsync" />
 </div>
 
 <p class="text-muted">Orders: @orders | Show details: @showDetails</p>
@@ -44,5 +45,17 @@
                     </div>
                 </div>,
             new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = true });
+    }
+
+    private Task OpenSideDialogAsync()
+    {
+        return DialogService.OpenSideAsync<RadzenSideDialogContent>(
+            "Side dialog",
+            new Dictionary<string, object?>
+            {
+                [nameof(RadzenSideDialogContent.OrderCount)] = orders,
+                [nameof(RadzenSideDialogContent.ShowDetails)] = showDetails
+            },
+            new SideDialogOptions { Position = DialogPosition.Right, ShowMask = true, Width = "500px" });
     }
 }
