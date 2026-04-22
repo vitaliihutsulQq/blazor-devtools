@@ -72,9 +72,40 @@ public class DevToolsExternalComponentTrackerTests
         Assert.That(snapshot.Roots[0].Children.Select(child => child.Name), Is.EqualTo(new[] { nameof(TestInlineChildComponent) }));
     }
 
+    [Test]
+    public void Radzen_side_dialogs_reparent_existing_detached_component_under_synthetic_root()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<NavigationManager, TestNavigationManager>();
+        services.AddScoped<IJSRuntime, TestJsRuntime>();
+        services.AddScoped<ComponentTracker>();
+        services.AddScoped<DevToolsSnapshotBridge>();
+        services.AddScoped<DevToolsAutoRefreshScheduler>();
+        services.AddScoped<IDevToolsExternalComponentTracker, DevToolsExternalComponentTracker>();
+        services.AddRadzenComponents();
+
+        using var provider = services.BuildServiceProvider();
+        var tracker = provider.GetRequiredService<ComponentTracker>();
+        var externalTracker = provider.GetRequiredService<IDevToolsExternalComponentTracker>();
+        var dialogService = provider.GetRequiredService<DialogService>();
+
+        tracker.RegisterComponent("child", typeof(TestSideDialogComponent));
+
+        externalTracker.EnsureInitialized();
+        _ = dialogService.OpenSideAsync("Files intake", typeof(TestSideDialogComponent), new Dictionary<string, object?> { ["CaseId"] = 10 }, new SideDialogOptions());
+
+        var snapshot = tracker.BuildSnapshot();
+
+        Assert.That(snapshot.Roots, Has.Count.EqualTo(1));
+        Assert.That(snapshot.Roots[0].Name, Is.EqualTo("RadzenSideDialog"));
+        Assert.That(snapshot.Roots[0].Children.Select(child => child.Name), Is.EqualTo(new[] { nameof(TestSideDialogComponent) }));
+    }
+
     private sealed class TestDialogComponent : ComponentBase;
 
     private sealed class TestInlineChildComponent : ComponentBase;
+
+    private sealed class TestSideDialogComponent : ComponentBase;
 
     private sealed class TestNavigationManager : NavigationManager
     {

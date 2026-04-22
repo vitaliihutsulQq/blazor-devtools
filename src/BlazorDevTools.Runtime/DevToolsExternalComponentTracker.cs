@@ -156,6 +156,18 @@ public sealed class DevToolsExternalComponentTracker : IDevToolsExternalComponen
             parentComponentId: null,
             parameters: parameterSnapshots);
 
+        if (componentType is not null && componentTracker.TryReparentDetachedComponent(componentType, rootComponentId))
+        {
+            lock (syncRoot)
+            {
+                var entry = openRoots.LastOrDefault(root => root.RootComponentId == rootComponentId);
+                if (entry is not null)
+                {
+                    entry.HasAttachedChild = true;
+                }
+            }
+        }
+
         autoRefreshScheduler.RequestRefresh();
     }
 
