@@ -11,5 +11,6 @@ public sealed record ComponentNode(
     IReadOnlyList<ComponentCascadingParameterSnapshot> CascadingParameters,
     ComponentLifecycleMetricsSnapshot? LifecycleMetrics,
     ComponentRenderInfoSnapshot? RenderInfo,
+    ComponentRenderDiffInfoSnapshot? RenderDiffInfo,
     int? RenderCount,
     IReadOnlyList<ComponentNode> Children);

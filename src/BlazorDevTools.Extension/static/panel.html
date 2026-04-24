@@ -10,6 +10,9 @@
         --surface-bg: #ffffff;
         --surface-subtle-bg: #f8fafc;
         --surface-border: #e2e8f0;
+        --tree-pane-min-width: 260px;
+        --details-pane-min-width: 340px;
+        --pane-splitter-width: 12px;
         --text-primary: #1f2937;
         --text-muted: #64748b;
         --text-subtle: #475569;
@@ -96,11 +99,64 @@
       }
 
       .panel-layout {
+        --tree-pane-width: 38%;
         display: grid;
-        grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.9fr);
-        gap: 16px;
+        grid-template-columns:
+          minmax(var(--tree-pane-min-width), var(--tree-pane-width))
+          var(--pane-splitter-width)
+          minmax(var(--details-pane-min-width), 1fr);
+        gap: 0;
         min-height: 0;
         flex: 1;
+      }
+
+      .pane-splitter {
+        position: relative;
+        min-width: var(--pane-splitter-width);
+        cursor: col-resize;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .pane-splitter::before {
+        content: "";
+        position: absolute;
+        top: 12px;
+        bottom: 12px;
+        left: 50%;
+        width: 1px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: #cbd5e1;
+        transition: background-color 120ms ease, box-shadow 120ms ease, width 120ms ease;
+      }
+
+      .pane-splitter::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 32px;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        background-image: radial-gradient(circle, #94a3b8 1.1px, transparent 1.1px);
+        background-size: 4px 8px;
+        background-position: center;
+        opacity: 0.85;
+        pointer-events: none;
+      }
+
+      .pane-splitter:hover::before,
+      .pane-splitter:focus-visible::before,
+      .pane-splitter.is-active::before {
+        width: 2px;
+        background: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(191, 219, 254, 0.8);
+      }
+
+      .pane-splitter:focus-visible {
+        outline: none;
       }
 
       .surface {
@@ -126,8 +182,10 @@
       .tree-pane {
         display: flex;
         flex-direction: column;
+        min-width: 0;
         min-height: 0;
         overflow: hidden;
+        margin-right: 8px;
       }
 
       .tree-scroll {
@@ -212,8 +270,15 @@
       .details-pane {
         display: flex;
         flex-direction: column;
+        min-width: 0;
         min-height: 0;
         overflow: hidden;
+        margin-left: 8px;
+      }
+
+      body.is-resizing-panes {
+        cursor: col-resize;
+        user-select: none;
       }
 
       .details-scroll {
@@ -251,12 +316,12 @@
       .summary-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        margin-top: 14px;
+        gap: 8px;
+        margin-top: 10px;
       }
 
       .summary-card {
-        padding: 10px 12px;
+        padding: 8px 10px;
         border-radius: 10px;
         background: var(--surface-subtle-bg);
         border: 1px solid var(--surface-border);
@@ -380,11 +445,30 @@
         margin-top: 16px;
       }
 
+      .dependencies-section {
+        margin-top: 16px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .dependencies-section > .services-section,
+      .dependencies-section > .cascading-section {
+        margin-top: 0;
+      }
+
+      .dependencies-graph-section {
+        margin-top: 16px;
+      }
+
       .metrics-section {
         margin-top: 16px;
       }
 
       .render-info-section {
+        margin-top: 16px;
+      }
+
+      .render-diff-section {
         margin-top: 16px;
       }
 
@@ -412,6 +496,360 @@
         color: #475569;
       }
 
+      .dependencies-graph-title {
+        margin: 0 0 10px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #475569;
+      }
+
+      .dependencies-graph-note,
+      .dependencies-graph-hint {
+        margin: 0 0 12px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .dependency-graph-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .dependency-graph-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-subtle);
+      }
+
+      .dependency-graph-legend-swatch {
+        width: 20px;
+        height: 0;
+        border-top-width: 3px;
+        border-top-style: solid;
+        border-radius: 999px;
+        display: inline-block;
+      }
+
+      .dependency-graph-legend-swatch--ParentChild {
+        border-top-color: #3b82f6;
+      }
+
+      .dependency-graph-legend-swatch--ParameterFlow {
+        border-top-color: #16a34a;
+        border-top-style: dashed;
+      }
+
+      .dependency-graph-legend-swatch--CascadingDependency {
+        border-top-color: #7c3aed;
+        border-top-style: dashed;
+      }
+
+      .dependency-graph-legend-swatch--exact {
+        border-top-color: #0f172a;
+      }
+
+      .dependency-graph-legend-swatch--inferred {
+        border-top-color: #64748b;
+        border-top-style: dashed;
+      }
+
+      .dependency-graph-canvas {
+        border: 1px solid var(--surface-border);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        overflow: hidden;
+      }
+
+      .dependency-graph-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--surface-border);
+        background: rgba(248, 250, 252, 0.88);
+      }
+
+      .dependency-graph-controls-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .dependency-graph-control-button {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .dependency-graph-control-button:hover:not(:disabled) {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+      }
+
+      .dependency-graph-control-button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .dependency-graph-zoom-value {
+        min-width: 56px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: #0f172a;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .dependency-graph-controls-hint,
+      .dependency-graph-selection-summary {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .dependency-graph-selection-summary {
+        padding: 10px 14px 0;
+        line-height: 1.5;
+      }
+
+      .dependency-graph-viewport {
+        position: relative;
+        min-height: 420px;
+        max-height: 560px;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable both-edges;
+        cursor: grab;
+        background-image:
+          linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+
+      .graph-tab-panel .dependencies-graph-section {
+        margin-top: 16px;
+      }
+
+      .graph-tab-panel .dependency-graph-canvas {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .graph-tab-panel .dependency-graph-viewport {
+        min-height: 520px;
+        height: clamp(520px, 58vh, 720px);
+        max-height: none;
+      }
+
+      .dependency-graph-viewport:focus {
+        outline: 2px solid #93c5fd;
+        outline-offset: -2px;
+      }
+
+      .dependency-graph-viewport.is-panning {
+        cursor: grabbing;
+      }
+
+      .dependency-graph-stage {
+        position: relative;
+      }
+
+      .dependency-graph-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .dependency-graph-edge {
+        stroke-width: 3.5;
+        opacity: 0.97;
+      }
+
+      .dependency-graph-edge.is-inferred {
+        stroke-width: 2.75;
+        opacity: 0.72;
+      }
+
+      .dependency-graph-edge--ParentChild {
+        stroke: #3b82f6;
+      }
+
+      .dependency-graph-edge--ParameterFlow {
+        stroke: #16a34a;
+        stroke-dasharray: 8 7;
+      }
+
+      .dependency-graph-edge--CascadingDependency {
+        stroke: #7c3aed;
+        stroke-dasharray: 8 7;
+      }
+
+      .dependency-graph-edge-hit-area {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 14;
+        cursor: help;
+      }
+
+      .dependency-graph-edge-label-group {
+        cursor: help;
+      }
+
+      .dependency-graph-edge-label-bg {
+        fill: rgba(255, 255, 255, 0.98);
+        stroke: rgba(148, 163, 184, 0.55);
+      }
+
+      .dependency-graph-edge-label-bg.is-inferred {
+        fill: rgba(248, 250, 252, 0.92);
+      }
+
+      .dependency-graph-edge-label-bg--ParentChild {
+        stroke: rgba(59, 130, 246, 0.35);
+      }
+
+      .dependency-graph-edge-label-bg--ParameterFlow {
+        stroke: rgba(22, 163, 74, 0.35);
+      }
+
+      .dependency-graph-edge-label-bg--CascadingDependency {
+        stroke: rgba(124, 58, 237, 0.35);
+      }
+
+      .dependency-graph-edge-label {
+        font-size: 12px;
+        font-weight: 600;
+        font-family: Segoe UI, sans-serif;
+      }
+
+      .dependency-graph-edge-label--ParentChild {
+        fill: #1d4ed8;
+      }
+
+      .dependency-graph-edge-label--ParameterFlow {
+        fill: #15803d;
+      }
+
+      .dependency-graph-edge-label--CascadingDependency {
+        fill: #6d28d9;
+      }
+
+      .dependency-graph-node {
+        cursor: pointer;
+        outline: none;
+      }
+
+      .dependency-graph-node-rect {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 1.5;
+        filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.08));
+      }
+
+      .dependency-graph-node.is-selected .dependency-graph-node-rect {
+        fill: #dbeafe;
+        stroke: #2563eb;
+        stroke-width: 2;
+      }
+
+      .dependency-graph-node:hover .dependency-graph-node-rect,
+      .dependency-graph-node:focus .dependency-graph-node-rect {
+        stroke: #60a5fa;
+        stroke-width: 2;
+      }
+
+      .dependency-graph-node-name,
+      .dependency-graph-node-type {
+        font-family: Segoe UI, sans-serif;
+        pointer-events: none;
+      }
+
+      .dependency-graph-node-name {
+        font-size: 14px;
+        font-weight: 700;
+        fill: #0f172a;
+      }
+
+      .dependency-graph-node-type {
+        font-size: 12px;
+        fill: #64748b;
+      }
+
+      .dependency-graph-tooltip {
+        position: absolute;
+        z-index: 2;
+        max-width: 280px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.96);
+        color: #f8fafc;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.28);
+        pointer-events: none;
+        will-change: left, top;
+      }
+
+      .dependency-graph-tooltip::after {
+        content: "";
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: rgba(15, 23, 42, 0.96);
+        transform: rotate(45deg);
+      }
+
+      .dependency-graph-tooltip[data-horizontal-placement="right"][data-vertical-placement="above"]::after {
+        left: 16px;
+        bottom: -5px;
+      }
+
+      .dependency-graph-tooltip[data-horizontal-placement="left"][data-vertical-placement="above"]::after {
+        right: 16px;
+        bottom: -5px;
+      }
+
+      .dependency-graph-tooltip[data-horizontal-placement="right"][data-vertical-placement="below"]::after {
+        left: 16px;
+        top: -5px;
+      }
+
+      .dependency-graph-tooltip[data-horizontal-placement="left"][data-vertical-placement="below"]::after {
+        right: 16px;
+        top: -5px;
+      }
+
+      .dependency-graph-tooltip-content {
+        display: grid;
+        gap: 4px;
+      }
+
+      .dependency-graph-tooltip-title {
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .dependency-graph-tooltip-meta,
+      .dependency-graph-tooltip-detail {
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(226, 232, 240, 0.95);
+        word-break: break-word;
+      }
+
       .metrics-title {
         margin: 0 0 10px;
         font-size: 14px;
@@ -426,6 +864,21 @@
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: #475569;
+      }
+
+      .render-diff-title {
+        margin: 0 0 10px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #475569;
+      }
+
+      .render-diff-note {
+        margin: 0 0 12px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.5;
       }
 
       .parameter-list {
@@ -465,39 +918,206 @@
         gap: 10px;
       }
 
+      .render-diff-list,
+      .render-diff-history-list {
+        list-style: none;
+        margin: 12px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+      }
+
       .parameter-item {
-        padding: 12px;
+        padding: 8px;
         border-radius: 10px;
         background: var(--surface-subtle-bg);
         border: 1px solid var(--surface-border);
       }
 
       .service-item {
-        padding: 12px;
+        padding: 8px;
         border-radius: 10px;
         background: var(--surface-subtle-bg);
         border: 1px solid var(--surface-border);
       }
 
       .cascading-item {
-        padding: 12px;
+        padding: 8px;
         border-radius: 10px;
         background: var(--surface-subtle-bg);
         border: 1px solid var(--surface-border);
       }
 
       .metric-card {
-        padding: 12px;
+        padding: 8px;
         border-radius: 10px;
         background: var(--surface-subtle-bg);
         border: 1px solid var(--surface-border);
       }
 
       .render-cause-item {
-        padding: 12px;
+        padding: 8px;
         border-radius: 10px;
         background: var(--surface-subtle-bg);
         border: 1px solid var(--surface-border);
+      }
+
+      .render-diff-item,
+      .render-diff-history-item {
+        padding: 8px;
+        border-radius: 10px;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
+      }
+
+      /* compact, scan-friendly diff rows */
+      .render-diff-list .render-diff-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+      }
+
+      .render-diff-name {
+        flex: 0 0 180px;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--metric-label-gold);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .render-diff-values {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 0;
+        min-width: 0;
+      }
+
+      .render-diff-prev,
+      .render-diff-current {
+        background: transparent;
+        border-radius: 6px;
+        padding: 2px 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        max-width: 45%;
+      }
+
+      .render-diff-arrow {
+        color: var(--text-subtle);
+        flex: 0 0 auto;
+      }
+
+      /* history summary as compact toggle */
+      .render-diff-history-summary {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: transparent;
+        padding: 6px 8px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #334155;
+        border-radius: 8px;
+      }
+
+      .render-diff-history-summary:hover {
+        background: #eef2ff;
+      }
+
+      .render-diff-history-summary.is-selected {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .render-diff-history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      .render-diff-history-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .render-diff-history-toggle {
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #334155;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .render-diff-history-toggle:hover {
+        background: #f8fafc;
+      }
+
+      .render-diff-filter-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .render-diff-filter-toggle input {
+        margin: 0;
+        accent-color: #2563eb;
+      }
+
+      .render-diff-history-details {
+        margin-top: 8px;
+      }
+
+      .render-diff-selected-details {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 12px;
+        background: var(--surface-subtle-bg);
+        border: 1px solid var(--surface-border);
+      }
+
+      .render-diff-selected-title,
+      .render-diff-selected-subtitle {
+        margin: 0 0 10px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #475569;
+      }
+
+      .render-diff-selected-subtitle {
+        margin-top: 12px;
+      }
+
+      .render-diff-selected-grid {
+        margin-bottom: 10px;
+      }
+
+      .render-diff-selected-cause-details {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.5;
       }
 
       .parameter-name {
@@ -547,6 +1167,52 @@
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--metric-label-gold);
+      }
+
+      .render-diff-name,
+      .render-diff-history-title {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--metric-label-gold);
+      }
+
+      .render-diff-history-summary {
+        margin-bottom: 0;
+        font-size: 13px;
+        line-height: 1.45;
+        letter-spacing: 0;
+        text-transform: none;
+        color: #334155;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .render-diff-history-sequence,
+      .render-diff-history-cause,
+      .render-diff-history-change-summary {
+        color: #334155;
+      }
+
+      .render-diff-history-summary.is-selected .render-diff-history-sequence,
+      .render-diff-history-summary.is-selected .render-diff-history-cause,
+      .render-diff-history-summary.is-selected .render-diff-history-change-summary {
+        color: #1d4ed8;
+      }
+
+      .render-diff-history-timestamp,
+      .render-diff-history-separator {
+        color: var(--text-muted);
+      }
+
+      .render-diff-history-summary.is-selected .render-diff-history-timestamp,
+      .render-diff-history-summary.is-selected .render-diff-history-separator {
+        color: #2563eb;
+      }
+
+      .render-diff-history-timestamp {
+        font-variant-numeric: tabular-nums;
       }
 
       .parameter-value {
@@ -631,9 +1297,26 @@
         word-break: break-word;
       }
 
+      .render-diff-value {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.5;
+        word-break: break-word;
+        color: var(--metric-neutral);
+      }
+
       @media (max-width: 720px) {
         .panel-layout {
           grid-template-columns: 1fr;
+        }
+
+        .pane-splitter {
+          display: none;
+        }
+
+        .tree-pane,
+        .details-pane {
+          margin: 0;
         }
 
         .summary-grid,
@@ -655,8 +1338,8 @@
         <p id="snapshot-status" class="status">Waiting for a component snapshot from the inspected Blazor app.</p>
         <button id="inspect-toggle" class="inspect-toggle" type="button">Pick From Page</button>
       </div>
-      <div class="panel-layout">
-        <section class="surface tree-pane">
+      <div id="panel-layout" class="panel-layout">
+        <section id="tree-pane" class="surface tree-pane">
           <header class="pane-header">
             <h2>Component Tree</h2>
           </header>
@@ -668,7 +1351,15 @@
           </div>
         </section>
 
-        <aside class="surface details-pane">
+        <div
+          id="pane-splitter"
+          class="pane-splitter"
+          role="separator"
+          aria-label="Resize component tree and selection panes"
+          aria-orientation="vertical"
+          tabindex="0"></div>
+
+        <aside id="details-pane" class="surface details-pane">
           <header class="pane-header">
             <h2>Selection</h2>
           </header>
