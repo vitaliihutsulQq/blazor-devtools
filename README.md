@@ -1,115 +1,200 @@
 # Blazor DevTools
 
-Lightweight developer tooling for Blazor WebAssembly apps — component-tree inspection, parameter & metadata details, component search, and an optional DOM picker.
+Lightweight developer tooling for **Blazor WebAssembly** apps.
 
-This project is experimental. It helps developers understand and debug component trees in Blazor WASM apps by shipping a small runtime library and a Chromium DevTools extension. The extension shows component snapshots published by the runtime from the running app.
+Blazor DevTools helps you inspect a running component tree, understand why components re-render, and explore component metadata from a Chromium DevTools panel.
 
-What you get today
-- A Chromium-based DevTools panel with a browsable component tree, parameters, and metadata
-- Search / filter components by name or full type name
+> [!WARNING]
+> **Project status:** experimental. The recommended path today is the simple runtime integration. The generator/proxy path is available for controlled trials, but it does not yet support every component shape.
+
+| At a glance | |
+| --- | --- |
+| Best first step | Run the sample app and load the unpacked extension |
+| Recommended integration | Runtime package + inheritance-based component base |
+| Browser support | Chromium-based browsers |
+| Deeper docs | [`docs/`](docs/) |
+
+## What you get today
+
+- A DevTools panel with a browsable component tree, parameters, and metadata
+- Search and filter by component name or full type name
 - Auto-refresh snapshots after component updates
-- Inspect injected services and tracked cascading values for components
-- Lifecycle and performance metrics (render counts, timings, state changes)
-- Render-cause inspection (why a component recently re-rendered)
-- An opt-in DOM picker that highlights components which expose explicit DOM marker attributes
-- A runtime NuGet package (BlazorDevTools.Runtime) and an in-repo sample app for quick trials
+- Inspection of injected services and tracked cascading values
+- Lifecycle and performance metrics such as render counts, timings, and state-change counts
+- Render-cause inspection to help explain recent re-renders
+- An opt-in DOM picker for components that expose explicit DOM marker attributes
+- A runtime NuGet package and an in-repo sample app for quick local trials
 
-Quick try (30–60s)
-1. Build and run the sample app:
+## Quick try (30-60s)
 
-   dotnet run --project src/BlazorDevTools.SampleApp/BlazorDevTools.SampleApp.csproj
+> [!TIP]
+> If you are visiting the repository for the first time, start here.
 
-2. Build the extension and load it unpacked in a Chromium browser:
+### 1) Run the sample app
 
-   cd src/BlazorDevTools.Extension
-   npm ci
-   npm run build
+```bash
+dotnet run --project src/BlazorDevTools.SampleApp/BlazorDevTools.SampleApp.csproj
+```
 
-   Then open chrome://extensions (or edge://extensions), enable Developer mode and Load unpacked → select src/BlazorDevTools.Extension/dist
+### 2) Build and load the extension
 
-3. Open DevTools on the sample app and choose the "Blazor" panel. You should see a component tree and be able to explore parameters.
+```bash
+cd src/BlazorDevTools.Extension
+npm ci
+npm run build
+```
 
-Status and limitations (honest)
-- Project is experimental and under active development.
+Then open `chrome://extensions` or `edge://extensions`, enable **Developer mode**, choose **Load unpacked**, and select:
+
+```text
+src/BlazorDevTools.Extension/dist
+```
+
+### 3) Open the Blazor panel
+
+Open DevTools on the sample app and select the **Blazor** panel. You should see the component tree and be able to inspect parameters and metadata.
+
+## Status and limitations
+
+- The project is under active development and should still be considered experimental.
 - The simple inheritance integration is the recommended default today and is stable for small-to-medium apps.
- - An experimental Roslyn generator/proxy integration exists for large code-behind-heavy apps; it is usable for controlled trials but does not yet cover every component shape.
- - DOM picker and page highlighting are opt-in and require explicit DOM marker attributes on elements.
+- An experimental Roslyn generator/proxy integration exists for large code-behind-heavy apps, but it does not yet cover every component shape.
+- DOM picker and page highlighting are opt-in and require explicit DOM marker attributes on elements.
 
-Repository overview (high level)
-- src/BlazorDevTools.Extension — Chromium extension UI (TypeScript)
-- src/BlazorDevTools.Runtime — runtime library and static web-asset bridge (NuGet package)
-- src/BlazorDevTools.Protocol — shared protocol contracts
-- src/BlazorDevTools.Generators — experimental Roslyn generator/analyzer
-- src/BlazorDevTools.SampleApp — small sample app to try the extension
-- tests/ and artifacts/ — unit tests, compatibility fixture, and package validation helpers
-- docs/ — deeper, developer-focused documentation (publishing, troubleshooting, compatibility notes)
+## Choose an integration path
 
-If you want deep developer or release guidance, see docs/ (links at the end).
+| Path | Best for | Status |
+| --- | --- | --- |
+| **Simple runtime integration** | Most apps, especially new or small-to-medium projects | **Recommended** |
+| **Generator/proxy integration** | Large code-behind-heavy apps where changing many base classes is costly | **Experimental** |
 
-Getting started for integrators
-1) Simple (recommended default)
-- Add the runtime package or reference the project in development.
-- Register services in Program.cs and include the packaged bridge script in index.html.
+### 1) Simple runtime integration (recommended)
 
-Minimal runtime setup (conceptual)
+1. Add the runtime package, or use a `ProjectReference` during local development.
+2. Register the runtime in `Program.cs`.
+3. Use a shared component base that inherits `DevtoolsComponentBase`.
+4. Include the packaged bridge script in `wwwroot/index.html`.
 
-Program.cs:
+**Package install**
 
+```bash
+dotnet add package BlazorDevTools.Runtime
+```
+
+**Minimal setup**
+
+`Program.cs`
+
+```csharp
 using BlazorDevTools.Runtime;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.Services.AddBlazorDevToolsRuntime();
 await builder.Build().RunAsync();
+```
 
-index.html:
+`AppComponentBase.cs`
 
+```csharp
+using BlazorDevTools.Runtime;
+
+public abstract class AppComponentBase : DevtoolsComponentBase
+{
+}
+```
+
+`_Imports.razor`
+
+```razor
+@inherits AppComponentBase
+```
+
+`wwwroot/index.html`
+
+```html
 <script src="_content/BlazorDevTools.Runtime/devtoolsBridge.js"></script>
 <script src="_framework/blazor.webassembly.js"></script>
+```
 
-2) Experimental generator/proxy (for large code-behind apps)
-- Purpose: avoid changing many existing partial `.razor.cs` base classes.
-- How it works (short): the runtime delivers an analyzer/generator; eligible components get generated proxy types and a manifest; the runtime activates proxies at runtime.
-- Status: usable for controlled trials. It is not a silver bullet and skips some component shapes (sealed, generic, nested, abstract, etc.). See docs/experimental-proxy-integration.md for details and eligibility rules.
+> [!NOTE]
+> For package installation notes, private feed setup, and concise consumer examples, see [`src/BlazorDevTools.Runtime/README-NUGET.md`](src/BlazorDevTools.Runtime/README-NUGET.md).
 
-Packaging and installing the runtime
- - Local development: reference the runtime project directly with a ProjectReference for fast iteration.
- - Package consumers: the runtime is distributed as a NuGet package. When using GitHub Packages or another private feed, add the NuGet source and follow the provider's authentication instructions (for GitHub Packages this commonly means a PAT with read:packages). See src/BlazorDevTools.Runtime/README-NUGET.md for concise install notes and examples.
- - Do not hardcode version examples in consumer docs here; check Releases or the package feed for the current version.
+### 2) Extension setup
 
-Developer: build & test (short)
-- Restore / build / test the solution:
+To use Blazor DevTools with your own app, the browser extension must also be installed locally:
 
-  dotnet restore BlazorDevTools.sln
-  dotnet build BlazorDevTools.sln
-  dotnet test BlazorDevTools.sln
+```bash
+cd src/BlazorDevTools.Extension
+npm ci
+npm run build
+```
 
-- Build the extension: cd src/BlazorDevTools.Extension && npm ci && npm run build
-- Pack local packages if you need package-based validation:
+Load the generated `src/BlazorDevTools.Extension/dist` folder as an unpacked extension in a Chromium-based browser.
 
-  dotnet pack src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj -c Release -o artifacts/local-packages
-  dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release -o artifacts/local-packages
+### 3) Experimental generator/proxy mode
 
-Verification & validation notes
-- Use src/BlazorDevTools.SampleApp and tests/BlazorDevTools.ExternalConsumer to verify the simple inheritance flow.
-- For generator/proxy validation, see tests/BlazorDevTools.CompatibilityFixture and artifacts/package-consumer-validation. See docs/compatibility-fixture.md and docs/experimental-proxy-integration.md.
+> [!IMPORTANT]
+> This path is intended for controlled trials. It is not a drop-in replacement for every Blazor component shape.
 
-Troubleshooting and deeper docs
-- docs/troubleshooting.md — common issues and guidance
-- docs/experimental-proxy-integration.md — architecture, eligibility, and limitations of the generator path
-- docs/publishing.md — release and package publishing workflow
+- Purpose: reduce the need to change many existing partial `.razor.cs` base classes.
+- How it works: the runtime delivers an analyzer/generator; eligible components receive generated proxy types and a manifest, and the runtime activates proxies at runtime.
+- Known limitations: some component shapes are intentionally skipped, including sealed, generic, nested, and abstract scenarios.
+- Details and eligibility rules: [`docs/experimental-proxy-integration.md`](docs/experimental-proxy-integration.md)
 
-CI and publishing (brief)
-- CI validates build, tests, and extension artifacts on PRs. See .github/workflows/ci.yml.
-- Package publishing is handled by .github/workflows/publish-packages.yml and publishes Protocol first, then Runtime. See docs/publishing.md for the release walkthrough.
+## Repository guide
 
-Contributing
-- PRs are welcome. Please keep changes focused, add tests for behavior changes where reasonable, and update docs when adding or changing integration flows.
+| Area | Purpose |
+| --- | --- |
+| `src/BlazorDevTools.Runtime` | Runtime library and static web-asset bridge |
+| `src/BlazorDevTools.Protocol` | Shared protocol contracts |
+| `src/BlazorDevTools.Generators` | Experimental Roslyn generator/analyzer |
+| `src/BlazorDevTools.Extension` | Chromium extension UI |
+| `src/BlazorDevTools.SampleApp` | Small sample app for local trials |
+| `tests/` and `artifacts/` | Tests, compatibility fixture, and package validation helpers |
+| `docs/` | Troubleshooting, publishing, and deeper design notes |
 
-License
-- Package artifacts (Protocol and Runtime) declare the MIT license in their project metadata (see PackageLicenseExpression in src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj and src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj).
-- This repository includes a top-level LICENSE file matching the package metadata (MIT). See LICENSE in the repository root for the full text.
+## Build, validate, and troubleshoot
 
-Related files
-- src/BlazorDevTools.Runtime/README-NUGET.md — concise runtime package install instructions
-- docs/ — full developer and release documentation
+### Build and test
+
+```bash
+dotnet restore BlazorDevTools.sln
+dotnet build BlazorDevTools.sln
+dotnet test BlazorDevTools.sln
+```
+
+### Build the extension
+
+```bash
+cd src/BlazorDevTools.Extension
+npm ci
+npm run build
+```
+
+### Pack local packages
+
+```bash
+dotnet pack src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj -c Release -o artifacts/local-packages
+dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release -o artifacts/local-packages
+```
+
+### Validation notes
+
+- Use `src/BlazorDevTools.SampleApp` and `tests/BlazorDevTools.ExternalConsumer` to verify the simple runtime flow.
+- For generator/proxy validation, use `tests/BlazorDevTools.CompatibilityFixture` and `artifacts/package-consumer-validation`.
+
+### Troubleshooting and deeper docs
+
+- [`docs/troubleshooting.md`](docs/troubleshooting.md)
+- [`docs/experimental-proxy-integration.md`](docs/experimental-proxy-integration.md)
+- [`docs/compatibility-fixture.md`](docs/compatibility-fixture.md)
+- [`docs/publishing.md`](docs/publishing.md)
+
+## Contributing
+
+PRs are welcome. Please keep changes focused, add tests for behavior changes when reasonable, and update documentation when changing integration flows.
+
+## License
+
+This repository is licensed under the [MIT License](LICENSE). Package artifacts declare the same license in project metadata.
