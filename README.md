@@ -72,8 +72,8 @@ Open DevTools on the sample app and select the **Blazor** panel. You should see 
 
 1. Add the runtime package, or use a `ProjectReference` during local development.
 2. Register the runtime in `Program.cs`.
-3. Use a shared component base that inherits `DevtoolsComponentBase`.
-4. Include the packaged bridge script in `wwwroot/index.html`.
+3. Include the packaged bridge script in `wwwroot/index.html`.
+4. (Optional) Use a shared component base that inherits `DevtoolsComponentBase` to opt in components by inheritance — this is not required for the runtime integration to work.
 
 **Package install**
 
@@ -82,6 +82,8 @@ dotnet add package BlazorDevTools.Runtime
 ```
 
 **Minimal setup**
+
+The following is the required baseline for the simple runtime integration. Install the runtime package, register the runtime services, and include the bridge script in your app. No component inheritance is required for basic functionality.
 
 `Program.cs`
 
@@ -94,7 +96,18 @@ builder.Services.AddBlazorDevToolsRuntime();
 await builder.Build().RunAsync();
 ```
 
-`AppComponentBase.cs`
+`wwwroot/index.html`
+
+```html
+<script src="_content/BlazorDevTools.Runtime/devtoolsBridge.js"></script>
+<script src="_framework/blazor.webassembly.js"></script>
+```
+
+**Optional: inheritance-based setup**
+
+If you prefer an inheritance-based opt-in for components, you can add a shared base class that inherits DevtoolsComponentBase and apply it via `_Imports.razor`. This is optional — the runtime integration works without this.
+
+`AppComponentBase.cs` (optional)
 
 ```csharp
 using BlazorDevTools.Runtime;
@@ -104,17 +117,10 @@ public abstract class AppComponentBase : DevtoolsComponentBase
 }
 ```
 
-`_Imports.razor`
+`_Imports.razor` (optional)
 
 ```razor
 @inherits AppComponentBase
-```
-
-`wwwroot/index.html`
-
-```html
-<script src="_content/BlazorDevTools.Runtime/devtoolsBridge.js"></script>
-<script src="_framework/blazor.webassembly.js"></script>
 ```
 
 > [!NOTE]
