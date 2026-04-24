@@ -12,6 +12,7 @@ public sealed class DevToolsTrackedComponentLifecycle
     private readonly IDevToolsExternalComponentTracker? externalComponentTracker;
     private readonly ComponentLifecycleMetricsCollector lifecycleMetricsCollector = new();
     private readonly ComponentRenderCauseCollector renderCauseCollector = new();
+    private readonly ComponentRenderDiffCollector renderDiffCollector = new();
     private bool isRegistered;
     private string? resolvedParentComponentId;
 
@@ -42,6 +43,7 @@ public sealed class DevToolsTrackedComponentLifecycle
         resolvedParentComponentId = parentComponentId ?? resolvedParentComponentId ?? externalComponentTracker?.ResolveParentComponentId(componentType);
         lifecycleMetricsCollector.MarkTrackingStarted();
         renderCauseCollector.ObserveParameters(parameters, isRegistered);
+        renderDiffCollector.ObserveParameters(parameters);
 
         componentTracker.RegisterComponent(ComponentId, componentType, resolvedParentComponentId);
 
@@ -165,6 +167,7 @@ public sealed class DevToolsTrackedComponentLifecycle
         renderContent(builder);
         lifecycleMetricsCollector.RecordRender(Stopwatch.GetElapsedTime(startedAt));
         renderCauseCollector.RecordRender(isFirstRender);
+        renderDiffCollector.RecordRender();
         PublishInspectorDataIfRegistered();
     }
 
@@ -177,5 +180,6 @@ public sealed class DevToolsTrackedComponentLifecycle
 
         componentTracker.UpdateLifecycleMetrics(ComponentId, lifecycleMetricsCollector.BuildSnapshot());
         componentTracker.UpdateRenderInfo(ComponentId, renderCauseCollector.BuildSnapshot());
+        componentTracker.UpdateRenderDiffInfo(ComponentId, renderDiffCollector.BuildSnapshot());
     }
 }

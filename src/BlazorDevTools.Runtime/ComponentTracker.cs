@@ -122,6 +122,22 @@ public sealed class ComponentTracker
         }
     }
 
+    public void UpdateRenderDiffInfo(string componentId, ComponentRenderDiffInfoSnapshot renderDiffInfo)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(componentId);
+        ArgumentNullException.ThrowIfNull(renderDiffInfo);
+
+        lock (syncRoot)
+        {
+            if (!components.TryGetValue(componentId, out var trackedComponent))
+            {
+                return;
+            }
+
+            trackedComponent.RenderDiffInfo = renderDiffInfo;
+        }
+    }
+
     public bool TryReparentDetachedComponent(Type componentType, string parentComponentId)
     {
         ArgumentNullException.ThrowIfNull(componentType);
@@ -250,14 +266,75 @@ public sealed class ComponentTracker
     {
         lock (syncRoot)
         {
-            var roots = components.Values
-                .Where(component => component.ParentComponentId is null || !components.ContainsKey(component.ParentComponentId))
+            var orderedComponents = components.Values
                 .OrderBy(component => component.Sequence)
+                .ToArray();
+
+            var roots = orderedComponents
+                .Where(component => component.ParentComponentId is null || !components.ContainsKey(component.ParentComponentId))
                 .Select(BuildNode)
                 .ToArray();
 
-            return new ComponentTreeSnapshot(DateTimeOffset.UtcNow, roots);
+            var dependencyGraph = BuildDependencyGraph(orderedComponents);
+
+            return new ComponentTreeSnapshot(DateTimeOffset.UtcNow, roots, dependencyGraph);
         }
+    }
+
+    private ComponentDependencyGraphSnapshot BuildDependencyGraph(IReadOnlyList<TrackedComponent> orderedComponents)
+    {
+        var nodes = orderedComponents
+            .Select(component => new ComponentDependencyGraphNodeSnapshot(component.Id, component.Name, component.FullTypeName))
+            .ToArray();
+
+        var edges = new List<ComponentDependencyGraphEdgeSnapshot>();
+
+        foreach (var component in orderedComponents)
+        {
+            if (component.ParentComponentId is null || !components.TryGetValue(component.ParentComponentId, out var parentComponent))
+            {
+                continue;
+            }
+
+            edges.Add(new ComponentDependencyGraphEdgeSnapshot(
+                parentComponent.Id,
+                component.Id,
+                ComponentDependencyEdgeTypes.ParentChild,
+                "Child",
+                [],
+                false,
+                null));
+
+            if (component.Parameters.Count > 0)
+            {
+                edges.Add(new ComponentDependencyGraphEdgeSnapshot(
+                    parentComponent.Id,
+                    component.Id,
+                    ComponentDependencyEdgeTypes.ParameterFlow,
+                    component.Parameters.Count == 1 ? "1 param" : $"{component.Parameters.Count} params",
+                    component.Parameters.Select(parameter => parameter.Name).ToArray(),
+                    true,
+                    "Parameter flow is inferred from the parent-child relationship. The runtime does not yet trace the exact call site that assigned each parameter."));
+            }
+
+            if (component.CascadingParameters.Count > 0)
+            {
+                edges.Add(new ComponentDependencyGraphEdgeSnapshot(
+                    parentComponent.Id,
+                    component.Id,
+                    ComponentDependencyEdgeTypes.CascadingDependency,
+                    component.CascadingParameters.Count == 1 ? "1 cascading" : $"{component.CascadingParameters.Count} cascading",
+                    component.CascadingParameters
+                        .Select(parameter => parameter.ProviderHint is { Length: > 0 }
+                            ? $"{parameter.PropertyName} (Name: {parameter.ProviderHint})"
+                            : parameter.PropertyName)
+                        .ToArray(),
+                    true,
+                    "The exact provider component is not currently proven. This edge is anchored to the nearest tracked parent/ancestor context."));
+            }
+        }
+
+        return new ComponentDependencyGraphSnapshot(nodes, edges);
     }
 
     private ComponentNode BuildNode(TrackedComponent component)
@@ -280,6 +357,7 @@ public sealed class ComponentTracker
             component.CascadingParameters,
             component.LifecycleMetrics,
             component.RenderInfo,
+            component.RenderDiffInfo,
             component.RenderCount,
             children);
     }
@@ -313,6 +391,8 @@ public sealed class ComponentTracker
         public ComponentLifecycleMetricsSnapshot? LifecycleMetrics { get; set; }
 
         public ComponentRenderInfoSnapshot? RenderInfo { get; set; }
+
+        public ComponentRenderDiffInfoSnapshot? RenderDiffInfo { get; set; }
 
         public int? RenderCount { get; set; }
 
