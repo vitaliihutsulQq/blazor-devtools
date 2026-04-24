@@ -1,165 +1,81 @@
 # AGENTS.md
 
-## Purpose
-- This repository contains a Blazor WebAssembly developer tools project inspired by Angular DevTools.
-- The codebase mixes .NET projects under `src/` and `tests/` with a TypeScript browser extension under `src/BlazorDevTools.Extension`.
-- The repository now includes both a simple inheritance-based runtime integration mode and an experimental generator/proxy integration mode.
-- There are no Cursor rules in `.cursor/rules/` or `.cursorrules`.
-- There are no Copilot rules in `.github/copilot-instructions.md`.
+Purpose
+- Short guide for contributors and automation agents working on the BlazorDevTools repository.
+- Project: Blazor WebAssembly developer tools with .NET projects (src/, tests/) and a TypeScript browser extension (src/BlazorDevTools.Extension).
+- Two supported integration modes: a simple inheritance-based runtime integration and an experimental Roslyn generator / proxy path.
 
-## Scope
-- Applies to the repository root.
-- A deeper `AGENTS.md` should take precedence for files in its subtree.
-- Explicit project configuration beats this file.
+Scope
+- Applies to the repository root. Subtree-level AGENTS.md (if present) overrides this file. Project files and CI are authoritative.
 
-## Repository Status
-- Root solution: `BlazorDevTools.sln`.
-- .NET projects:
-  - `src/BlazorDevTools.Protocol` - protocol contracts class library and transitive package dependency.
-  - `src/BlazorDevTools.Generators` - Roslyn source generator for the experimental proxy-based tracking path.
-  - `src/BlazorDevTools.Runtime` - runtime Razor class library with static web assets and packaged analyzer delivery.
-  - `src/BlazorDevTools.SampleApp` - local Blazor WebAssembly sample app.
-  - `tests/BlazorDevTools.Runtime.Tests` - NUnit test project for runtime behavior.
-  - `tests/BlazorDevTools.Generators.Tests` - NUnit test project for source generator behavior.
-  - `tests/BlazorDevTools.CompatibilityFixture` - Blazor WebAssembly fixture simulating large code-behind-heavy consumer patterns.
-  - `tests/BlazorDevTools.CompatibilityFixture.Tests` - NUnit test project verifying generator behavior against the compatibility fixture.
-  - `tests/BlazorDevTools.ExternalConsumer` - external-consumer-style app validating the simple inheritance-based install flow.
-- Extension project: `src/BlazorDevTools.Extension` - browser extension source and build scripts.
-- Additional validation artifact: `artifacts/package-consumer-validation` - package-based app used to validate automatic analyzer delivery from the runtime package.
-- Root documentation: `README.md`.
-- Supporting docs live under `docs/`.
-- NuGet restore is pinned to `nuget.org` through the repository `NuGet.config`.
-- GitHub Actions workflows live under `.github/workflows/`.
+Repository layout (important projects)
+- Root solution: BlazorDevTools.sln
+- Key projects:
+  - src/BlazorDevTools.Protocol — protocol contracts (package)
+  - src/BlazorDevTools.Generators — Roslyn generator (experimental)
+  - src/BlazorDevTools.Runtime — runtime Razor library + analyzer delivery
+  - src/BlazorDevTools.SampleApp — local sample app
+  - tests/BlazorDevTools.Runtime.Tests
+  - tests/BlazorDevTools.Generators.Tests
+  - tests/BlazorDevTools.CompatibilityFixture (large-app fixture)
+  - tests/BlazorDevTools.ExternalConsumer (external-consumer-style validation app)
+- Extension: src/BlazorDevTools.Extension
+- Validation artifact: artifacts/package-consumer-validation (used to validate analyzer delivery from packages)
+- Docs: README.md and docs/
 
-## Rule Files Checked
-- `.cursorrules`: not present.
-- `.cursor/rules/`: not present.
-- `.github/copilot-instructions.md`: not present.
-- If any of these files are later added, read them before editing code and fold their rules into future updates of this file.
+Quick commands
+- dotnet restore BlazorDevTools.sln
+- dotnet build BlazorDevTools.sln
+- dotnet test BlazorDevTools.sln
+- Run specific tests:
+  - dotnet test tests/BlazorDevTools.Runtime.Tests/BlazorDevTools.Runtime.Tests.csproj
+  - dotnet test tests/BlazorDevTools.Generators.Tests/BlazorDevTools.Generators.Tests.csproj
+  - dotnet test tests/BlazorDevTools.CompatibilityFixture.Tests/BlazorDevTools.CompatibilityFixture.Tests.csproj
+- Pack packages (local validation):
+  - dotnet pack src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj -c Release
+  - dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release
+- Sample and validation apps:
+  - dotnet run --project src/BlazorDevTools.SampleApp/BlazorDevTools.SampleApp.csproj
+  - dotnet run --project tests/BlazorDevTools.CompatibilityFixture/BlazorDevTools.CompatibilityFixture.csproj
+  - dotnet run --project tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj
+  - dotnet publish tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj -c Debug -o artifacts/external-consumer
+- Package-consumer validation build:
+  - dotnet restore artifacts/package-consumer-validation/PackageConsumerValidation.csproj && dotnet build artifacts/package-consumer-validation/PackageConsumerValidation.csproj
+- Extension:
+  - npm ci (in src/BlazorDevTools.Extension)
+  - npm run build (in src/BlazorDevTools.Extension)
 
-## Agent Workflow
-- Inspect the repo for manifests and config files before making stack assumptions.
-- Prefer commands defined by the repo over generic defaults.
-- Keep changes focused and avoid unrelated refactors.
-- When you add tooling, tests, workflows, docs, or conventions, update this file in the same change.
-- Keep docs honest about experimental status and validation coverage.
+Guiding principles for changes
+- Prefer the narrowest command that proves a change (unit/test/pack) rather than running the whole solution.
+- Keep changes focused; avoid unrelated refactors in the same commit.
+- Update docs and this file when you add new tooling, CI, or canonical commands.
 
-## Command Discovery Order
-- Check `README*`, docs, CI files, and local validation fixtures first.
-- Then inspect: `*.sln`, `*.csproj`, `Directory.Build.props`, `global.json`.
-- Then inspect: `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`.
-- Use the first authoritative source you find instead of guessing.
+Generator & validation notes (important)
+- The generator/proxy integration is experimental. Validate generator changes by running:
+  1) tests/BlazorDevTools.Generators.Tests
+  2) tests/BlazorDevTools.CompatibilityFixture.Tests (compatibility fixture)
+- Packaging flow: produce and validate packages in this order — Protocol first, then Runtime. Use dotnet pack and test package-consumer validation when relevant.
+- For runtime analyzer delivery validation, use artifacts/package-consumer-validation and the external-consumer app as required.
 
-## Build / Lint / Test Commands
-### Current state
-- Restore .NET dependencies: `dotnet restore BlazorDevTools.sln`
-- Build .NET solution: `dotnet build BlazorDevTools.sln`
-- Run .NET tests: `dotnet test BlazorDevTools.sln`
-- Run runtime tests only: `dotnet test tests/BlazorDevTools.Runtime.Tests/BlazorDevTools.Runtime.Tests.csproj`
-- Run generator tests only: `dotnet test tests/BlazorDevTools.Generators.Tests/BlazorDevTools.Generators.Tests.csproj`
-- Run compatibility fixture tests only: `dotnet test tests/BlazorDevTools.CompatibilityFixture.Tests/BlazorDevTools.CompatibilityFixture.Tests.csproj`
-- Pack protocol package: `dotnet pack src/BlazorDevTools.Protocol/BlazorDevTools.Protocol.csproj -c Release`
-- Pack runtime package: `dotnet pack src/BlazorDevTools.Runtime/BlazorDevTools.Runtime.csproj -c Release`
-- Run the sample app: `dotnet run --project src/BlazorDevTools.SampleApp/BlazorDevTools.SampleApp.csproj`
-- Run the compatibility fixture: `dotnet run --project tests/BlazorDevTools.CompatibilityFixture/BlazorDevTools.CompatibilityFixture.csproj`
-- Run the external consumer app: `dotnet run --project tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj`
-- Publish the external consumer app for install validation: `dotnet publish tests/BlazorDevTools.ExternalConsumer/BlazorDevTools.ExternalConsumer.csproj -c Debug -o artifacts/external-consumer`
-- Restore/build the package validation app: `dotnet restore artifacts/package-consumer-validation/PackageConsumerValidation.csproj && dotnet build artifacts/package-consumer-validation/PackageConsumerValidation.csproj`
-- Install extension dependencies: `npm ci` in `src/BlazorDevTools.Extension`
-- Build the extension: `npm run build` in `src/BlazorDevTools.Extension`
-- Lint: none configured yet for either .NET or TypeScript.
+Packaging and publishing (local guidance)
+- Do not publish packages automatically from agent runs unless explicitly requested.
+- Locally: dotnet pack the Protocol package, verify contents, then dotnet pack the Runtime package and validate analyzer delivery with the package consumer app.
 
-## Command Execution Guidance
-- Prefer the narrowest command that proves the change works.
-- For generator work, run the generator tests and compatibility fixture tests first.
-- For packaging changes, run local pack commands and inspect package contents when relevant.
-- For extension-only changes, prefer `npm ci` and `npm run build` in `src/BlazorDevTools.Extension`.
-- If a command fails because tooling is missing, report the missing tool instead of guessing.
+Command execution guidance
+- If a command fails because tooling is missing, report the missing tool rather than guessing.
+- For extension-only changes, run npm ci and npm run build under src/BlazorDevTools.Extension and validate the produced artifacts.
 
-## Documentation Expectations
-- Keep `README.md` aligned with the current install flow, integration modes, workflows, and package versions.
-- Keep package readmes concise and installation-focused.
-- Keep `docs/` honest about experimental behavior, validation scope, and limitations.
-- Do not describe zero-config large-app support as production-ready unless the repository actually validates it end to end.
+Documentation expectations
+- Keep README.md aligned with the install flow, supported integration modes, and experimental status of the generator path.
+- Package READMEs should be short and installation-focused. docs/ may contain design notes and limitations.
 
-## Code Style Baseline
-- Follow existing code first; if none exists, use the conventions below.
-- Optimize for readability, maintainability, and low surprise.
-- Keep files focused; do not mix unrelated concerns in one change.
-- Prefer conventional code over clever abstractions.
+Code style, tests, and quick practices
+- Follow existing code and project conventions. Prefer readability and small focused changes.
+- Add or update tests for behavior changes when appropriate. Prefer deterministic tests and keep tests near the behavior they validate.
 
-## Imports and Dependencies
-- Group imports consistently: standard library/framework, third-party, local.
-- Remove unused imports.
-- Prefer explicit imports over wildcard imports unless the ecosystem strongly favors them.
-- Avoid adding new dependencies when the standard library or current stack already solves the problem.
+Final checklist for changes
+- In your PR or commit message, state what changed, what you validated, and what you could not validate locally (e.g., remote publishing).
+- Mention any missing tests or tooling required to validate the change.
 
-## Formatting
-- Use the repository formatter when one exists.
-- If no formatter exists, preserve surrounding style within the file.
-- Keep indentation and line wrapping consistent.
-- Avoid whitespace-only churn unless required by formatting.
-
-## Types and Interfaces
-- Prefer explicit public API types.
-- Keep internal types simple and intention-revealing.
-- Avoid `any`-style escape hatches unless there is a clear, localized reason.
-- Model nullability and optional values deliberately.
-- Validate untrusted input at boundaries.
-
-## Naming
-- Use descriptive names that reveal intent.
-- Prefer full words over unclear abbreviations.
-- Match the conventions of the language and framework in use.
-- Name booleans as predicates, such as `isReady`, `hasErrors`, or `canSave`.
-- Name async operations for their effect, not their implementation detail.
-
-## Functions and Methods
-- Give each function one clear responsibility.
-- Prefer small functions with obvious control flow.
-- Use guard clauses for invalid states and early exits.
-- Pass explicit inputs instead of reaching into shared state when practical.
-- Avoid hidden side effects.
-
-## Error Handling
-- Fail fast on invalid input and impossible states.
-- Do not swallow errors silently unless the behavior is intentionally defensive and documented.
-- Add context when rethrowing or propagating failures.
-- Return or throw the most specific error shape the stack supports.
-- User-facing messages should be actionable; logs should contain diagnostic detail.
-
-## Logging and Diagnostics
-- Log meaningful events, not routine noise.
-- Include enough context to debug issues without leaking secrets.
-- Never log passwords, tokens, connection strings, or personal data.
-- Prefer structured logging when the stack supports it.
-- Generator diagnostics should use stable IDs and actionable wording.
-
-## Tests
-- Add or update tests for behavior changes when a test framework exists.
-- Keep tests close to the behavior they validate.
-- Favor deterministic tests over timing-sensitive tests.
-- Mock only real external boundaries.
-- For bug fixes, add a regression test when feasible.
-- Prefer NUnit for .NET tests unless an existing project already uses something else.
-
-## Configuration and Secrets
-- Never hardcode secrets.
-- Use environment variables, user-level NuGet sources, or the project's documented secret-management flow.
-- Document new config keys when project docs exist.
-- Prefer safe local defaults when practical.
-
-## Change Management
-- Make the smallest change that fully solves the problem.
-- Avoid opportunistic refactors unless required for correctness or maintainability.
-- Preserve user changes you did not author.
-- If you add tooling or commands, update this file with the exact canonical usage.
-
-## Final Check Expectations
-- State what changed.
-- State what you validated.
-- State what you could not validate.
-- Mention missing tests or tooling explicitly.
-
-## Maintenance Note
-- Update this file when solution structure, commands, workflows, packaging, or docs expectations change.
+Maintenance
+- Keep this file up to date when solution structure, packaging, or canonical commands change.
