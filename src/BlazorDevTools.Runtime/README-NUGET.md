@@ -5,7 +5,7 @@
 Install it:
 
 ```bash
-dotnet add package BlazorDevTools.Runtime --version <VERSION>
+dotnet add package BlazorDevTools.Runtime
 ```
 
 Register it in `Program.cs`:
