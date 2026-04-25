@@ -1,9 +1,8 @@
-using System.Collections.Immutable;
 using BlazorDevTools.Runtime;
-using BlazorDevTools.Generators;
 using Microsoft.AspNetCore.Components;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Collections.Immutable;
 
 namespace BlazorDevTools.Generators.Tests;
 
@@ -13,20 +12,20 @@ public class ProxyGeneratorTests
     public void Generator_emits_proxy_and_manifest_for_eligible_components_only()
     {
         const string source = """
-using System;
-using Microsoft.AspNetCore.Components;
-using BlazorDevTools.Runtime;
+            using System;
+            using Microsoft.AspNetCore.Components;
+            using BlazorDevTools.Runtime;
 
-namespace TestApp;
+            namespace TestApp;
 
-public partial class EligibleComponent : ComponentBase { }
-public abstract partial class AbstractComponent : ComponentBase { }
-public sealed partial class SealedComponent : ComponentBase { }
-public partial class GenericComponent<T> : ComponentBase { }
-public partial class AlreadyTrackedComponent : DevtoolsComponentBase { }
-public partial class PlainClass { }
-public class NonPartialComponent : ComponentBase { }
-""";
+            public partial class EligibleComponent : ComponentBase { }
+            public abstract partial class AbstractComponent : ComponentBase { }
+            public sealed partial class SealedComponent : ComponentBase { }
+            public partial class GenericComponent<T> : ComponentBase { }
+            public partial class AlreadyTrackedComponent : DevtoolsComponentBase { }
+            public partial class PlainClass { }
+            public class NonPartialComponent : ComponentBase { }
+            """;
 
         var result = RunGenerator(source);
         var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BDTManifest_", StringComparison.Ordinal)).Value;
@@ -43,13 +42,13 @@ public class NonPartialComponent : ComponentBase { }
     public void Generator_emits_registration_manifest_for_multiple_components()
     {
         const string source = """
-using Microsoft.AspNetCore.Components;
+        using Microsoft.AspNetCore.Components;
 
-namespace TestApp;
+        namespace TestApp;
 
-public partial class FirstComponent : ComponentBase { }
-public partial class SecondComponent : ComponentBase { }
-""";
+        public partial class FirstComponent : ComponentBase { }
+        public partial class SecondComponent : ComponentBase { }
+        """;
 
         var result = RunGenerator(source);
         var manifest = result.GeneratedSources.Single(entry => entry.Key.StartsWith("BDTManifest_", StringComparison.Ordinal)).Value;
@@ -62,18 +61,18 @@ public partial class SecondComponent : ComponentBase { }
     public void Generator_uses_exact_symbol_namespace_for_proxy_references()
     {
         const string source = """
-using Microsoft.AspNetCore.Components;
+        using Microsoft.AspNetCore.Components;
 
-namespace A.B.C.Widget
-{
-    public partial class Widget : ComponentBase { }
-}
+        namespace A.B.C.Widget
+        {
+            public partial class Widget : ComponentBase { }
+        }
 
-namespace A.B.C.Pages.TimeEntry
-{
-    public partial class TimeEntry : ComponentBase { }
-}
-""";
+        namespace A.B.C.Pages.TimeEntry
+        {
+            public partial class TimeEntry : ComponentBase { }
+        }
+        """;
 
         var result = RunGenerator(source);
         var widgetProxy = result.GeneratedSources["Widget__BlazorDevToolsProxy.g.cs"];
@@ -94,12 +93,12 @@ namespace A.B.C.Pages.TimeEntry
     public void Generator_emits_automatic_dom_anchor_for_proxy_inspect_mode()
     {
         const string source = """
-using Microsoft.AspNetCore.Components;
+        using Microsoft.AspNetCore.Components;
 
-namespace TestApp;
+        namespace TestApp;
 
-public partial class InspectableComponent : ComponentBase { }
-""";
+        public partial class InspectableComponent : ComponentBase { }
+        """;
 
         var result = RunGenerator(source);
         var proxy = result.GeneratedSources["InspectableComponent__BlazorDevToolsProxy.g.cs"];
@@ -113,36 +112,36 @@ public partial class InspectableComponent : ComponentBase { }
     public void Generator_emits_actionable_skip_diagnostics_for_fixture_like_shapes()
     {
         const string source = """
-using System;
-using Microsoft.AspNetCore.Components;
-using BlazorDevTools.Runtime;
+        using System;
+        using Microsoft.AspNetCore.Components;
+        using BlazorDevTools.Runtime;
 
-namespace TestApp.Components
-{
-    public sealed partial class SkippedSealedPanel : ComponentBase { }
-    public partial class SkippedGenericList<TItem> : ComponentBase { }
-    public abstract partial class AbstractWorkspace : ComponentBase { }
-    public partial class AlreadyTrackedWidget : DevtoolsComponentBase { }
-    public partial class ExistingProxyWidget : ComponentBase, IDevToolsComponentProxy
-    {
-        public Type DevToolsOriginalComponentType => typeof(ExistingProxyWidget);
-        public void Dispose() { }
-    }
+        namespace TestApp.Components
+        {
+            public sealed partial class SkippedSealedPanel : ComponentBase { }
+            public partial class SkippedGenericList<TItem> : ComponentBase { }
+            public abstract partial class AbstractWorkspace : ComponentBase { }
+            public partial class AlreadyTrackedWidget : DevtoolsComponentBase { }
+            public partial class ExistingProxyWidget : ComponentBase, IDevToolsComponentProxy
+            {
+                public Type DevToolsOriginalComponentType => typeof(ExistingProxyWidget);
+                public void Dispose() { }
+            }
 
-    public class NonPartialPage : ComponentBase { }
-    public partial class NonComponentCodeBehind : IDisposable { public void Dispose() { } }
+            public class NonPartialPage : ComponentBase { }
+            public partial class NonComponentCodeBehind : IDisposable { public void Dispose() { } }
 
-    public partial class Outer
-    {
-        public partial class NestedPanel : ComponentBase { }
-    }
-}
+            public partial class Outer
+            {
+                public partial class NestedPanel : ComponentBase { }
+            }
+        }
 
-namespace Microsoft.AspNetCore.TestHost
-{
-    public partial class FrameworkPanel : ComponentBase { }
-}
-""";
+        namespace Microsoft.AspNetCore.TestHost
+        {
+            public partial class FrameworkPanel : ComponentBase { }
+        }
+        """;
 
         var result = RunGenerator(source, filePath: "TestComponents.razor.cs");
 
@@ -160,18 +159,46 @@ namespace Microsoft.AspNetCore.TestHost
     public void Generator_emits_non_componentbase_diagnostic_for_razor_codebehind_shape()
     {
         const string source = """
-using System;
-namespace TestApp.Components;
+        using System;
+        namespace TestApp.Components;
 
-public partial class NonComponentCodeBehind : IDisposable
-{
-    public void Dispose() { }
-}
-""";
+        public partial class NonComponentCodeBehind : IDisposable
+        {
+            public void Dispose() { }
+        }
+        """;
 
         var result = RunGenerator(source, filePath: "NonComponentCodeBehind.razor.cs");
 
         AssertDiagnostic(result.Diagnostics, "BDTG007", "NonComponentCodeBehind");
+    }
+
+    [Test]
+    public void Generator_treats_partial_razor_codebehind_with_blazor_component_signals_as_component_even_without_explicit_componentbase()
+    {
+        const string source = """
+        using Microsoft.AspNetCore.Components;
+
+        namespace TestApp.Pages;
+
+        public partial class ChristopherEdwardNolan
+        {
+            [Inject]
+            public NavigationManager Navigation { get; set; } = default!;
+
+            protected override Task OnInitializedAsync()
+            {
+                StateHasChanged();
+                return Task.CompletedTask;
+            }
+        }
+        """;
+
+        var result = RunGenerator(source, filePath: "ChristopherEdwardNolan.razor.cs");
+
+        Assert.That(result.GeneratedSources.Keys, Does.Contain("ChristopherEdwardNolan__BlazorDevToolsProxy.g.cs"));
+        Assert.That(result.Diagnostics.Any(diagnostic => diagnostic.Id == "BDTG007"), Is.False,
+            string.Join(Environment.NewLine, result.Diagnostics.Select(diagnostic => $"{diagnostic.Id}: {diagnostic.GetMessage()}")));
     }
 
     private static GeneratorExecutionResult RunGenerator(string source, string filePath = "TestInput.cs")

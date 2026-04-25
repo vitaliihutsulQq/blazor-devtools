@@ -88,6 +88,8 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
 
     private static bool IsEligibleForGeneration(INamedTypeSymbol symbol, ClassDeclarationSyntax classDeclaration)
     {
+        var behavesLikeImplicitRazorComponent = IsImplicitRazorComponentCodeBehind(classDeclaration);
+
         if (symbol.TypeKind != TypeKind.Class ||
             symbol.IsAbstract ||
             symbol.IsSealed ||
@@ -98,7 +100,7 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
             !classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword)) ||
             InheritsFrom(symbol, "BlazorDevTools.Runtime.DevtoolsComponentBase") ||
             Implements(symbol, "BlazorDevTools.Runtime.IDevToolsComponentProxy") ||
-            !InheritsFrom(symbol, "Microsoft.AspNetCore.Components.ComponentBase"))
+            !(InheritsFrom(symbol, "Microsoft.AspNetCore.Components.ComponentBase") || behavesLikeImplicitRazorComponent))
         {
             return false;
         }
@@ -123,11 +125,12 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
         }
 
         var isRazorCodeBehind = contextLooksLikeRazorCodeBehind(classDeclaration.SyntaxTree.FilePath);
+        var behavesLikeImplicitRazorComponent = IsImplicitRazorComponentCodeBehind(classDeclaration);
         var derivesDevtoolsBase = InheritsFrom(symbol, "BlazorDevTools.Runtime.DevtoolsComponentBase");
         var implementsProxy = Implements(symbol, "BlazorDevTools.Runtime.IDevToolsComponentProxy");
         var derivesComponentBase = InheritsFrom(symbol, "Microsoft.AspNetCore.Components.ComponentBase");
         var containingNamespace = symbol.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        var looksLikeTrackedComponent = derivesComponentBase || derivesDevtoolsBase || implementsProxy || isRazorCodeBehind;
+        var looksLikeTrackedComponent = derivesComponentBase || derivesDevtoolsBase || implementsProxy || isRazorCodeBehind || behavesLikeImplicitRazorComponent;
 
         if (!looksLikeTrackedComponent)
         {
@@ -176,7 +179,7 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
             return new SkipResult(BlazorDevToolsGeneratorDiagnostics.ExistingProxySkipped);
         }
 
-        if (!derivesComponentBase)
+        if (!derivesComponentBase && !behavesLikeImplicitRazorComponent)
         {
             if (classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword)) || isRazorCodeBehind)
             {
@@ -208,6 +211,77 @@ public sealed class BlazorDevToolsProxyGenerator : IIncrementalGenerator
         }
 
         return path.EndsWith(".razor.cs", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsImplicitRazorComponentCodeBehind(ClassDeclarationSyntax classDeclaration)
+    {
+        return classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword))
+               && contextLooksLikeRazorCodeBehind(classDeclaration.SyntaxTree.FilePath)
+               && LooksLikeBlazorComponentCodeBehind(classDeclaration);
+    }
+
+    private static bool LooksLikeBlazorComponentCodeBehind(ClassDeclarationSyntax classDeclaration)
+    {
+        return classDeclaration.Members.Any(static member =>
+            member switch
+            {
+                PropertyDeclarationSyntax property => HasKnownBlazorAttribute(property.AttributeLists),
+                MethodDeclarationSyntax method => LooksLikeLifecycleOverride(method) || ContainsStateHasChangedInvocation(method),
+                _ => false
+            });
+    }
+
+    private static bool HasKnownBlazorAttribute(SyntaxList<AttributeListSyntax> attributeLists)
+    {
+        foreach (var attributeList in attributeLists)
+        {
+            foreach (var attribute in attributeList.Attributes)
+            {
+                var name = attribute.Name.ToString();
+                if (name.EndsWith("Inject", StringComparison.Ordinal) ||
+                    name.EndsWith("InjectAttribute", StringComparison.Ordinal) ||
+                    name.EndsWith("Parameter", StringComparison.Ordinal) ||
+                    name.EndsWith("ParameterAttribute", StringComparison.Ordinal) ||
+                    name.EndsWith("CascadingParameter", StringComparison.Ordinal) ||
+                    name.EndsWith("CascadingParameterAttribute", StringComparison.Ordinal) ||
+                    name.EndsWith("SupplyParameterFromQuery", StringComparison.Ordinal) ||
+                    name.EndsWith("SupplyParameterFromQueryAttribute", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool LooksLikeLifecycleOverride(MethodDeclarationSyntax method)
+    {
+        if (!method.Modifiers.Any(static modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.OverrideKeyword)))
+        {
+            return false;
+        }
+
+        return method.Identifier.ValueText is "OnInitialized"
+            or "OnInitializedAsync"
+            or "OnParametersSet"
+            or "OnParametersSetAsync"
+            or "OnAfterRender"
+            or "OnAfterRenderAsync"
+            or "ShouldRender"
+            or "SetParametersAsync"
+            or "BuildRenderTree";
+    }
+
+    private static bool ContainsStateHasChangedInvocation(MethodDeclarationSyntax method)
+    {
+        return method.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(static invocation =>
+            invocation.Expression switch
+            {
+                IdentifierNameSyntax identifier => identifier.Identifier.ValueText == "StateHasChanged",
+                MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.ValueText == "StateHasChanged",
+                _ => false
+            });
     }
 
     private static Diagnostic CreateDiagnostic(DiagnosticDescriptor descriptor, Location location, string componentName)

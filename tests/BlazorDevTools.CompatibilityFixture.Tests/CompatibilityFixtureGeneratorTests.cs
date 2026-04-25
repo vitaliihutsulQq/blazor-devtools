@@ -14,6 +14,7 @@ public class CompatibilityFixtureGeneratorTests
     public void Eligible_partial_componentbase_shapes_get_generated_proxies()
     {
         AssertGeneratedTypeExists(typeof(CaseDetails));
+        AssertGeneratedTypeExists(typeof(ImplicitBaseTracking));
         AssertGeneratedTypeExists(typeof(CaseWorkspace));
         AssertGeneratedTypeExists(typeof(DocumentList));
         AssertGeneratedTypeExists(typeof(DocumentCard));
@@ -45,7 +46,8 @@ public class CompatibilityFixtureGeneratorTests
             nameof(CaseDetails),
             nameof(CaseWorkspace),
             nameof(DocumentCard),
-            nameof(DocumentList)
+            nameof(DocumentList),
+            nameof(ImplicitBaseTracking)
         }));
     }
 
