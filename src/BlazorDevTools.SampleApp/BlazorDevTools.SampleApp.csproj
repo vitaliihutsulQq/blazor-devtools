@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorDevTools.Runtime" Version="0.1.10" />
+    <PackageReference Include="BlazorDevTools.Runtime" Version="0.1.12" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.1" PrivateAssets="all" />
     <PackageReference Include="Radzen.Blazor" Version="10.3.0" />
